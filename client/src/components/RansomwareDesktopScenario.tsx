@@ -2,7 +2,7 @@
  * 设计提醒：该组件以麒麟银河风格的办公桌面营造可信工作环境；所有文档、锁定与提示均为 React 状态，绝不触及真实文件。
  */
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, FileText, LockKeyhole, Mail, MoreHorizontal, RotateCcw, Search, X } from "lucide-react";
+import { ArrowLeft, FileText, Folder, FolderOpen, LockKeyhole, Mail, MoreHorizontal, RotateCcw, Search, X } from "lucide-react";
 import { RANSOMWARE_DESKTOP_CONFIG } from "@/config/ransomwareScenario";
 
 type RansomwareDesktopScenarioProps = {
@@ -14,8 +14,11 @@ type RansomwareDesktopScenarioProps = {
 
 export function RansomwareDesktopScenario({ onLeave, onReset, onStageAudio, voiceEnabled }: RansomwareDesktopScenarioProps) {
   const [activeDocumentId, setActiveDocumentId] = useState<string | null>(null);
+  const [folderOpen, setFolderOpen] = useState(false);
   const [locked, setLocked] = useState(false);
   const [ransomVisible, setRansomVisible] = useState(false);
+  const [briefingVisible, setBriefingVisible] = useState(true);
+  const [briefingStep, setBriefingStep] = useState(0);
   const hasPlayedEntryNarration = useRef(false);
   const activeDocument = RANSOMWARE_DESKTOP_CONFIG.documents.find((document) => document.id === activeDocumentId) ?? null;
 
@@ -26,6 +29,17 @@ export function RansomwareDesktopScenario({ onLeave, onReset, onStageAudio, voic
     }
   }, [onStageAudio, voiceEnabled]);
 
+  useEffect(() => {
+    const steps = [
+      window.setTimeout(() => setBriefingStep(1), 220),
+      window.setTimeout(() => setBriefingStep(2), 2400),
+      window.setTimeout(() => setBriefingStep(3), 4700),
+      window.setTimeout(() => setBriefingStep(4), 7000),
+      window.setTimeout(() => setBriefingVisible(false), 9200),
+    ];
+    return () => steps.forEach((timer) => window.clearTimeout(timer));
+  }, []);
+
   const openDocument = (documentId: string) => {
     if (locked) {
       setRansomVisible(true);
@@ -35,6 +49,22 @@ export function RansomwareDesktopScenario({ onLeave, onReset, onStageAudio, voic
     setActiveDocumentId(documentId);
     if (voiceEnabled) onStageAudio(1);
   };
+
+  const openFolder = () => {
+    if (locked) {
+      setRansomVisible(true);
+      if (voiceEnabled) onStageAudio(3);
+      return;
+    }
+    setFolderOpen(true);
+  };
+
+  const selectDocument = (documentId: string) => {
+    setFolderOpen(false);
+    openDocument(documentId);
+  };
+
+  const skipBriefing = () => setBriefingVisible(false);
 
   const triggerLock = () => {
     setActiveDocumentId(null);
@@ -55,6 +85,8 @@ export function RansomwareDesktopScenario({ onLeave, onReset, onStageAudio, voic
         <button type="button" onClick={onReset} className="inline-flex items-center gap-1.5 rounded-md bg-white/10 px-2.5 py-1.5 text-[11px] font-medium transition hover:bg-white/18"><RotateCcw className="h-3.5 w-3.5" />一键重置</button>
       </header>
 
+      {briefingVisible && <section className="ransom-briefing fixed inset-x-0 bottom-0 top-10 z-[140] overflow-hidden bg-[#102b47] px-5 py-7 text-white sm:px-10 sm:py-10"><div className="ransom-briefing-grid pointer-events-none absolute inset-0" /><div className="pointer-events-none absolute -right-20 top-12 h-80 w-80 rounded-full border border-cyan-200/20" /><div className="pointer-events-none absolute -left-24 bottom-[-160px] h-96 w-96 rounded-full border-[38px] border-teal-300/10" /><div className="relative z-10 mx-auto flex min-h-full max-w-5xl flex-col"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="font-mono text-[10px] tracking-[.22em] text-cyan-100/70">RANSOMWARE ENTRY PATH · WEB ANIMATION</p><h1 className="mt-3 font-serif text-3xl font-bold tracking-tight sm:text-5xl">常见伪装进入路径</h1><p className="mt-3 max-w-2xl text-sm leading-7 text-white/70">本动画仅说明风险识别与浏览器内预置状态变化，不包含真实程序、文件或设备操作。</p></div><button type="button" onClick={skipBriefing} className="rounded-full border border-white/25 bg-white/10 px-4 py-2 text-xs font-medium text-white/85 transition hover:bg-white/20">跳过动画，进入桌面</button></div><div className="relative my-auto grid gap-4 py-10 sm:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr]"><div className={`ransom-briefing-node ${briefingStep >= 1 ? "briefing-step-active" : ""}`}><span className="grid h-14 w-14 place-items-center rounded-2xl bg-[#56b7be] text-white shadow-[0_14px_30px_rgba(18,115,127,.3)]"><Mail className="h-7 w-7" /></span><p className="mt-4 text-sm font-semibold">业务往来</p><p className="mt-1 text-xs leading-5 text-white/60">伪造来源、相似地址或异常附件。</p></div><div className={`ransom-briefing-link ${briefingStep >= 2 ? "briefing-link-active" : ""}`}><span>→</span></div><div className={`ransom-briefing-node ${briefingStep >= 2 ? "briefing-step-active" : ""}`}><span className="grid h-14 w-14 place-items-center rounded-2xl bg-[#e4b856] text-white shadow-[0_14px_30px_rgba(151,102,13,.25)]"><FileText className="h-7 w-7" /></span><p className="mt-4 text-sm font-semibold">伪装资料</p><p className="mt-1 text-xs leading-5 text-white/60">名称与业务相关，但来源和信息不一致。</p></div><div className={`ransom-briefing-link ${briefingStep >= 3 ? "briefing-link-active" : ""}`}><span>→</span></div><div className={`ransom-briefing-node ${briefingStep >= 3 ? "briefing-step-active" : ""}`}><span className="grid h-14 w-14 place-items-center rounded-2xl bg-[#d56c5f] text-white shadow-[0_14px_30px_rgba(141,43,38,.28)]"><Search className="h-7 w-7" /></span><p className="mt-4 text-sm font-semibold">诱导打开</p><p className="mt-1 text-xs leading-5 text-white/60">误信内容可能造成业务数据不可用。</p></div><div className={`ransom-briefing-link ${briefingStep >= 4 ? "briefing-link-active" : ""}`}><span>→</span></div><div className={`ransom-briefing-node ${briefingStep >= 4 ? "briefing-step-active" : ""}`}><span className="grid h-14 w-14 place-items-center rounded-2xl bg-[#b85254] text-white shadow-[0_14px_30px_rgba(122,29,32,.28)]"><LockKeyhole className="h-7 w-7" /></span><p className="mt-4 text-sm font-semibold">网页内锁定演示</p><p className="mt-1 text-xs leading-5 text-white/60">停止操作、报告并按预案恢复。</p></div></div><div className="ransom-briefing-progress mt-auto h-px overflow-hidden bg-white/15"><span className="block h-full bg-gradient-to-r from-cyan-300 via-[#f1cb66] to-[#df7770]" style={{ width: `${Math.max(briefingStep, 1) * 25}%` }} /></div><p className="mt-4 text-right font-mono text-[10px] tracking-[.16em] text-white/45">动画结束后进入资料文件夹</p></div></section>}
+
       <main className="relative min-h-[calc(100vh-40px)] overflow-hidden bg-[radial-gradient(ellipse_at_76%_14%,rgba(124,217,246,.58),transparent_21%),radial-gradient(circle_at_16%_76%,rgba(67,154,215,.38),transparent_31%),linear-gradient(136deg,#0f5b9d_0%,#187ebc_44%,#155896_100%)] px-5 pb-16 pt-5 sm:px-8 sm:pb-16 sm:pt-6">
         <div className="pointer-events-none absolute -right-28 top-16 h-[520px] w-[770px] rounded-[50%] border-[44px] border-white/10 blur-[.2px]" />
         <div className="pointer-events-none absolute -right-20 top-[118px] h-[430px] w-[680px] rounded-[50%] border border-white/20" />
@@ -63,11 +95,13 @@ export function RansomwareDesktopScenario({ onLeave, onReset, onStageAudio, voic
         <div className="relative z-10 mt-[-108px] max-w-[1320px] sm:mt-[-106px] sm:pl-28">
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3 text-white"><div><p className="text-[10px] font-medium tracking-[.2em] text-white/72">业务文件桌面</p><h1 className="mt-1 font-serif text-2xl font-bold tracking-tight sm:text-3xl">工作资料</h1></div><div className={`rounded-full border px-3 py-1.5 text-[10px] font-mono tracking-[.1em] ${locked ? "border-[#ffb0a8]/60 bg-[#802f32]/65 text-[#ffe5e0]" : "border-white/35 bg-white/12 text-white/85"}`}>{locked ? "文件状态：已锁定" : "文件状态：可正常访问"}</div></div>
           <section className="grid max-w-[770px] grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3 sm:gap-x-7 sm:gap-y-7 lg:grid-cols-4">
-            {RANSOMWARE_DESKTOP_CONFIG.documents.map((document) => <button key={document.id} type="button" onClick={() => openDocument(document.id)} className={`group relative flex min-h-[118px] flex-col items-center rounded-xl p-3 text-center transition ${locked ? "desktop-alert bg-[#532f38]/30 hover:bg-[#65383f]/45" : "hover:bg-white/12"}`}><span className={`grid h-14 w-14 place-items-center rounded-[15px] border shadow-[0_10px_20px_rgba(5,20,29,.18)] ${locked ? "border-[#e6a8a1]/45 bg-[#74464b] text-[#ffe9e6]" : document.trigger ? "border-[#f1c977] bg-[#fff5d3] text-[#bd7a1c]" : "border-white/60 bg-[#f4faf7] text-[#278572]"}`}>{locked ? <LockKeyhole className="h-6 w-6" /> : <FileText className="h-6 w-6" />}</span><span className="mt-2 line-clamp-2 max-w-[112px] text-[12px] font-medium leading-4 text-white drop-shadow">{locked ? `${document.name}.locked` : document.name}</span><span className={`mt-1 rounded px-1.5 py-0.5 text-[8px] font-mono tracking-[.08em] ${locked ? "bg-white/12 text-white/70" : document.trigger ? "bg-[#f7d98f] text-[#7d5714]" : "bg-white/16 text-white/75"}`}>{locked ? "LOCKED" : document.trigger ? "新收到" : document.label}</span></button>)}
+            <button type="button" onClick={openFolder} className={`group relative flex min-h-[118px] flex-col items-center rounded-xl p-3 text-center transition ${locked ? "desktop-alert bg-[#532f38]/30 hover:bg-[#65383f]/45" : "hover:bg-white/12"}`}><span className={`grid h-14 w-16 place-items-center rounded-[15px] border shadow-[0_10px_20px_rgba(5,20,29,.18)] ${locked ? "border-[#e6a8a1]/45 bg-[#74464b] text-[#ffe9e6]" : "border-white/60 bg-[#f9d76b] text-[#936818]"}`}>{locked ? <LockKeyhole className="h-6 w-6" /> : <Folder className="h-7 w-7 fill-current/30" />}</span><span className="mt-2 max-w-[112px] text-[12px] font-medium leading-4 text-white drop-shadow">{locked ? "资料文件夹.locked" : "资料文件夹"}</span><span className={`mt-1 rounded px-1.5 py-0.5 text-[8px] font-mono tracking-[.08em] ${locked ? "bg-white/12 text-white/70" : "bg-white/16 text-white/75"}`}>{locked ? "LOCKED" : `${RANSOMWARE_DESKTOP_CONFIG.documents.length} 个项目`}</span></button>
           </section>
         </div>
         <div className="absolute inset-x-0 bottom-0 z-20 flex h-11 items-center justify-between border-t border-white/20 bg-[#0e2d51]/78 px-3 text-white shadow-[0_-5px_18px_rgba(4,23,47,.2)] backdrop-blur"><div className="flex items-center gap-1.5"><span className="inline-flex h-8 items-center gap-2 rounded-md bg-[#e9f3fa] px-2.5 text-[11px] font-semibold text-[#1d5f98] shadow-sm"><span className="h-3 w-3 rounded-full border-[3px] border-[#1b87c7]" />开始</span><span className="grid h-7 w-7 place-items-center rounded-md bg-[#2a79b5] text-white"><FileText className="h-4 w-4" /></span><span className="grid h-7 w-7 place-items-center rounded-md bg-[#da9b3b] text-white"><Mail className="h-4 w-4" /></span><span className="hidden h-7 w-24 rounded-md border border-white/15 bg-white/10 sm:block" /></div><div className="flex items-center gap-3 text-[10px] text-white/75"><span className="hidden sm:inline">输入法</span><span>网络</span><span>音量</span><span>09:42</span></div></div>
       </main>
+
+      {!locked && folderOpen && <div className="fixed inset-0 z-[145] grid place-items-center bg-[#14252f]/45 px-4 backdrop-blur-[2px]"><section className="w-full max-w-[760px] overflow-hidden rounded-xl border border-[#cbd9df] bg-[#f8fbfd] shadow-[0_28px_80px_rgba(8,25,35,.44)]"><header className="flex items-center justify-between border-b border-[#dbe6ec] bg-white px-5 py-3"><div className="flex min-w-0 items-center gap-2"><span className="grid h-7 w-7 place-items-center rounded-md bg-[#fff1bd] text-[#9b711f]"><FolderOpen className="h-4 w-4" /></span><div><p className="text-sm font-semibold text-[#2d4655]">资料文件夹</p><p className="text-[10px] text-[#78909a]">仅显示配置中允许预览的资料</p></div></div><button type="button" onClick={() => setFolderOpen(false)} className="text-[#718492] transition hover:text-[#1f3e50]" aria-label="关闭资料文件夹"><X className="h-5 w-5" /></button></header><div className="grid gap-2 p-4 sm:grid-cols-2">{RANSOMWARE_DESKTOP_CONFIG.documents.map((document) => <button key={document.id} type="button" onClick={() => selectDocument(document.id)} className="flex min-w-0 items-center gap-3 rounded-lg border border-transparent bg-white p-3 text-left shadow-sm transition hover:border-[#9fcde1] hover:bg-[#f2faff]"><span className={`grid h-9 w-9 shrink-0 place-items-center rounded-md ${document.trigger ? "bg-[#fff2ca] text-[#a57016]" : "bg-[#e7f2ee] text-[#287968]"}`}><FileText className="h-4 w-4" /></span><span className="min-w-0"><span className="block truncate text-sm font-medium text-[#294754]">{document.name}</span><span className="mt-0.5 block text-[10px] font-mono tracking-[.08em] text-[#78909a]">{document.trigger ? "新收到 · 点击查看" : document.label}</span></span></button>)}</div><footer className="border-t border-[#e1e9ed] bg-white px-5 py-3 text-xs text-[#718795]">此文件夹仅为网页内固定资料视图，不访问本机目录。</footer></section></div>}
 
       {!locked && activeDocument && <div className="fixed inset-0 z-[155] grid place-items-center bg-[#14252f]/50 px-4 backdrop-blur-[2px]"><section className="w-full max-w-[620px] overflow-hidden rounded-xl border border-[#cbd9df] bg-white shadow-[0_28px_80px_rgba(8,25,35,.44)]"><header className="flex items-center justify-between border-b border-[#e1e8ec] bg-[#f8fafb] px-5 py-3"><div className="flex min-w-0 items-center gap-2"><span className="grid h-7 w-7 place-items-center rounded-md bg-[#e4f0ec] text-[#227b6d]"><FileText className="h-4 w-4" /></span><p className="truncate text-sm font-semibold text-[#2d4655]">{activeDocument.name}</p></div><button type="button" onClick={() => setActiveDocumentId(null)} className="text-[#718492] transition hover:text-[#1f3e50]" aria-label="关闭文档预览"><X className="h-5 w-5" /></button></header><div className="p-6 sm:p-8"><p className="font-mono text-[10px] tracking-[.14em] text-[#78919d]">DOCUMENT PREVIEW</p><h2 className="mt-3 font-serif text-2xl font-bold text-[#274657]">{activeDocument.previewTitle}</h2><div className="mt-6 space-y-3 border-y border-[#e4ecef] py-5 text-sm leading-7 text-[#59717e]">{activeDocument.previewLines.map((line) => <p key={line}>• {line}</p>)}</div>{activeDocument.trigger ? <div className="mt-6 rounded-lg border border-[#ead29a] bg-[#fffaf0] p-4"><p className="text-sm font-semibold text-[#76531b]">该资料需要继续打开才能查看完整内容。</p><p className="mt-1 text-xs leading-5 text-[#94774b]">此操作仅改变本网页中的预置桌面状态。</p><button type="button" onClick={triggerLock} className="mt-4 inline-flex items-center gap-2 rounded-md bg-[#b77b22] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#966018] active:scale-[.98]"><FileText className="h-4 w-4" />打开资料</button></div> : <p className="mt-6 text-xs text-[#78909a]">文档内容已在此页面内预览。</p>}</div></section></div>}
 

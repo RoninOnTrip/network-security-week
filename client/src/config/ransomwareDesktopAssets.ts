@@ -1,3 +1,8 @@
+import {
+  ALLOWED_SHARED_DOWNLOAD_FILE_EXTENSIONS,
+  isAllowedSharedDownloadFile,
+} from "@/config/sharedDownloadAsset";
+
 /**
  * 勒索虚拟桌面的可替换资料映射。
  *
@@ -8,16 +13,7 @@
  *
  * 所有资料仅用于浏览器内预览，不会被执行、加密或写入本机。
  */
-export const ALLOWED_RANSOMWARE_DESKTOP_FILE_EXTENSIONS = [
-  "txt",
-  "md",
-  "csv",
-  "pdf",
-  "png",
-  "jpg",
-  "jpeg",
-  "webp",
-] as const;
+export const ALLOWED_RANSOMWARE_DESKTOP_FILE_EXTENSIONS = ALLOWED_SHARED_DOWNLOAD_FILE_EXTENSIONS;
 
 type SafeDesktopDocument = {
   id: string;
@@ -62,8 +58,7 @@ const configuredDocuments: SafeDesktopDocument[] = [
 ];
 
 export function isAllowedRansomwareDesktopFile(fileName: string) {
-  const extension = fileName.split(".").pop()?.toLowerCase();
-  return Boolean(extension && ALLOWED_RANSOMWARE_DESKTOP_FILE_EXTENSIONS.includes(extension as (typeof ALLOWED_RANSOMWARE_DESKTOP_FILE_EXTENSIONS)[number]));
+  return isAllowedSharedDownloadFile(fileName);
 }
 
 export const RANSOMWARE_DESKTOP_DOCUMENTS = configuredDocuments

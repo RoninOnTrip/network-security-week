@@ -6,6 +6,51 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* 设计提醒：勒索场景的路径动画仅作为风险识别说明，使用可追踪的节点、低饱和蓝底和克制风险红色。 */
+@keyframes ransom-node-enter {
+  from { opacity: 0.32; transform: translateY(10px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes ransom-link-flow {
+  from { opacity: 0.18; transform: translateX(-6px); }
+  to { opacity: 0.95; transform: translateX(0); }
+}
+
+.ransom-briefing-grid {
+  opacity: .25;
+  background-image: linear-gradient(rgba(158, 220, 238, .18) 1px, transparent 1px), linear-gradient(90deg, rgba(158, 220, 238, .14) 1px, transparent 1px);
+  background-size: 42px 42px;
+}
+
+.ransom-briefing-node {
+  min-width: 0;
+  opacity: .32;
+  text-align: center;
+  transition: opacity 260ms ease, transform 260ms ease;
+}
+
+.ransom-briefing-node.briefing-step-active { animation: ransom-node-enter 520ms cubic-bezier(.23, 1, .32, 1) both; }
+
+.ransom-briefing-link {
+  display: grid;
+  min-height: 56px;
+  place-items: center;
+  color: rgba(214, 246, 255, .24);
+  font-size: 1.6rem;
+  transition: color 260ms ease;
+}
+
+.ransom-briefing-link.briefing-link-active { animation: ransom-link-flow 460ms cubic-bezier(.23, 1, .32, 1) both; color: rgba(214, 246, 255, .9); }
+
+@media (max-width: 639px) {
+  .ransom-briefing-link { min-height: 16px; transform: rotate(90deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ransom-briefing-node.briefing-step-active, .ransom-briefing-link.briefing-link-active { animation: none; opacity: 1; }
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
