@@ -130,15 +130,25 @@ export default function Home() {
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const homeWelcomeTimerRef = useRef<number | null>(null);
+  const narrationFollowUpTimerRef = useRef<number | null>(null);
 
   const activeScene = view === "home" ? null : sceneCards.find((scene) => scene.key === view) ?? sceneCards[0];
   const narration = activeScene ? NARRATION_CONFIG[activeScene.key].backupText[step] ?? "" : "";
   const steps = activeScene ? stepNames[activeScene.key] : [];
 
+  const clearNarrationFollowUp = () => {
+    if (narrationFollowUpTimerRef.current !== null) {
+      window.clearTimeout(narrationFollowUpTimerRef.current);
+      narrationFollowUpTimerRef.current = null;
+    }
+  };
+
   const stopNarration = () => {
+    clearNarrationFollowUp();
     window.speechSynthesis?.cancel();
     const audio = audioRef.current;
     if (audio) {
+      audio.onended = null;
       audio.pause();
       audio.currentTime = 0;
     }
@@ -167,6 +177,25 @@ export default function Home() {
     if (!audio) return;
     audio.src = source;
     audio.play().catch(() => undefined);
+  };
+
+  const playSceneAudioAfterCurrent = (key: SceneKey, audioStep: number, delayMs = 3000) => {
+    const audio = audioRef.current;
+    const scheduleNext = () => {
+      clearNarrationFollowUp();
+      narrationFollowUpTimerRef.current = window.setTimeout(() => {
+        narrationFollowUpTimerRef.current = null;
+        playSceneAudio(key, audioStep);
+      }, delayMs);
+    };
+    if (!audio || !audio.src || audio.ended) {
+      scheduleNext();
+      return;
+    }
+    audio.onended = () => {
+      audio.onended = null;
+      scheduleNext();
+    };
   };
 
   const playHomeWelcome = (fromUserAction = false) => {
@@ -263,9 +292,9 @@ export default function Home() {
       {view === "home" ? (
         <HomeScreen openScene={openScene} welcomeAudioPending={welcomeAudioPending} playHomeWelcome={() => playHomeWelcome(true)} />
       ) : view === "download" ? (
-        <TrainingSoftwarePortal key={sceneResetKey} onLeave={leaveScene} onStageAudio={(audioStep) => playSceneAudio("download", audioStep)} />
+        <TrainingSoftwarePortal key={sceneResetKey} onLeave={leaveScene} onStageAudio={(audioStep) => playSceneAudio("download", audioStep)} onAudioAfterCurrent={(audioStep) => playSceneAudioAfterCurrent("download", audioStep)} />
       ) : view === "mail" ? (
-        <MailScenario key={sceneResetKey} onLeave={leaveScene} onReset={resetScene} />
+        <MailScenario key={sceneResetKey} onLeave={leaveScene} onReset={resetScene} onAudioAfterCurrent={(audioStep) => playSceneAudioAfterCurrent("mail", audioStep)} />
       ) : view === "ransomware" ? (
         <RansomwareDesktopScenario key={sceneResetKey} onLeave={leaveScene} onReset={resetScene} onStageAudio={(audioStep: number) => playSceneAudio("ransomware", audioStep)} voiceEnabled={voiceEnabled} />
       ) : (
@@ -588,11 +617,10 @@ function LegacyTrainingSoftwarePortal({ onDownload }: { onDownload: () => void }
   );
 }
 
-function TrainingSoftwarePortal({ onLeave, onStageAudio }: { onLeave: () => void; onStageAudio: (step: number) => void }) {
+function TrainingSoftwarePortal({ onLeave, onStageAudio, onAudioAfterCurrent }: { onLeave: () => void; onStageAudio: (step: number) => void; onAudioAfterCurrent: (step: number) => void }) {
   const [stage, setStage] = useState<"idle" | "downloaded" | "runPrompt" | "infected" | "monitoring" | "contained">("idle");
   const [selectedApp, setSelectedApp] = useState("腾讯视频");
   const hasPlayedEntryNarration = useRef(false);
-  const endingNarrationTimer = useRef<number | null>(null);
   const appIcons: Record<string, string> = {
     WorkBuddy: trainingAsset("workbuddy.png"),
     "DClaw龙虾安全本地版": trainingAsset("dclaw.png"),
@@ -630,38 +658,24 @@ function TrainingSoftwarePortal({ onLeave, onStageAudio }: { onLeave: () => void
     { title: "追剧必备", caption: "正版内容，畅享视听", tone: "border-[#9fcaff]/50 bg-[linear-gradient(155deg,#eff8ff_0%,#fff_55%)]", items: ["腾讯视频", "QQ音乐", "QQ", "腾讯会议"] },
     { title: "热门推荐", caption: "常用软件，集中发现", tone: "border-[#9be5bd]/50 bg-[linear-gradient(155deg,#effff0_0%,#fff_55%)]", items: ["腾讯会议", "腾讯视频", "WPS Office", "QQ"] },
   ];
-  const clearEndingNarration = () => {
-    if (endingNarrationTimer.current !== null) {
-      window.clearTimeout(endingNarrationTimer.current);
-      endingNarrationTimer.current = null;
-    }
-  };
-  const scheduleEndingNarration = () => {
-    clearEndingNarration();
-    endingNarrationTimer.current = window.setTimeout(() => {
-      endingNarrationTimer.current = null;
-      onStageAudio(2);
-    }, 5000);
-  };
   useEffect(() => {
     if (!hasPlayedEntryNarration.current) {
       hasPlayedEntryNarration.current = true;
       onStageAudio(0);
     }
   }, [onStageAudio]);
-  useEffect(() => clearEndingNarration, []);
-  const beginDownload = (app = "腾讯视频") => { clearEndingNarration(); setSelectedApp(app); setStage("downloaded"); };
+  const beginDownload = (app = "腾讯视频") => { setSelectedApp(app); setStage("downloaded"); };
   const downloadTrainingAsset = () => {
     downloadMappedTrainingAsset(HIGH_RISK_TRAINING_ASSET.assetUrl, HIGH_RISK_TRAINING_ASSET.downloadName);
     onStageAudio(1);
-    scheduleEndingNarration();
+    onAudioAfterCurrent(2);
     setStage("idle");
   };
   const openVirtualRun = () => { setStage("runPrompt"); onStageAudio(1); };
   const simulateRun = () => { setStage("contained"); onStageAudio(3); };
   const showMonitoring = () => setStage("monitoring");
   const showPrevention = () => { setStage("contained"); onStageAudio(3); };
-  const restart = () => { clearEndingNarration(); setStage("idle"); };
+  const restart = () => { setStage("idle"); };
   const selectedInstaller = installerInfo[selectedApp];
   return (
     <div className="fixed inset-0 z-[100] overflow-y-auto bg-[#edf1f7] font-sans text-[#222]">
@@ -689,7 +703,7 @@ function TrainingSoftwarePortal({ onLeave, onStageAudio }: { onLeave: () => void
 
       {stage === "downloaded" && <DownloadTaskNotice appName={selectedApp} iconSrc={appIcons[selectedApp]} onDismiss={restart} onChoose={downloadTrainingAsset} />}
 
-      <footer className="border-t border-[#e0e5ec] bg-white py-7 text-center text-xs leading-7 text-[#9aa5b1]"><p>腾讯网　腾讯电脑管家　腾讯小鹅桌面</p><p className="mt-2">腾讯公司　版权所有　市场合作　投诉建议　侵权投诉指引　关于管家</p><p className="mt-1">Copyright © 1998 - 2017 Tencent. All Rights Reserved.</p><button onClick={() => { clearEndingNarration(); onLeave(); }} className="mt-4 text-xs text-[#5f7a8b] underline underline-offset-4">返回活动主页</button></footer>
+      <footer className="border-t border-[#e0e5ec] bg-white py-7 text-center text-xs leading-7 text-[#9aa5b1]"><p>腾讯网　腾讯电脑管家　腾讯小鹅桌面</p><p className="mt-2">腾讯公司　版权所有　市场合作　投诉建议　侵权投诉指引　关于管家</p><p className="mt-1">Copyright © 1998 - 2017 Tencent. All Rights Reserved.</p><button onClick={onLeave} className="mt-4 text-xs text-[#5f7a8b] underline underline-offset-4">返回活动主页</button></footer>
 
       {false && stage !== "idle" && <div className="fixed inset-0 z-[120] grid place-items-center bg-[#0a2032]/45 px-4 backdrop-blur-[2px]"><div className={`w-full max-w-[480px] overflow-hidden rounded-lg bg-white shadow-[0_24px_60px_rgba(7,28,48,.32)] ${stage === "infected" ? "ring-1 ring-[#e85c53]" : ""}`}>
         {stage === "downloaded" && <><div className="border-b border-[#e7edf3] px-6 py-4 text-[15px] font-semibold text-[#263c50]">下载完成</div><div className="px-6 py-6"><div className="flex items-center gap-4 rounded-md bg-[#f5f8fb] p-4"><img src={appIcons[selectedApp]} alt="" className="h-12 w-12 object-contain" /><div><p className="text-sm font-medium text-[#233a50]">{selectedInstaller.file}</p><p className="mt-1 text-xs text-[#8b9bab]">{selectedApp} · 版本 {selectedInstaller.version} · {selectedInstaller.size}</p></div></div><p className="mt-5 text-sm leading-6 text-[#536a7d]">安装包已准备就绪，是否立即运行？</p></div><div className="flex justify-end gap-3 border-t border-[#e7edf3] bg-[#f8fafc] px-6 py-3"><button onClick={restart} className="px-3 py-2 text-sm text-[#667b8b]">取消</button><button onClick={simulateRun} className="bg-[#2049ee] px-4 py-2 text-sm font-medium text-white">立即运行</button></div></>}
@@ -728,8 +742,12 @@ function SoftwareSource({ name, tag, icon, detail, action, onClick, good, risk }
   return <div className={`relative rounded-2xl border p-4 ${risk ? "border-[#ead09b] bg-[#fffdf7]" : good ? "border-[#b8d8ce] bg-[#f8fcfa]" : "border-[#dde5e1] bg-white"}`}><div className="flex items-start justify-between gap-3"><span className={`grid h-9 w-9 place-items-center rounded-xl ${risk ? "bg-[#fff0c7] text-[#a7781a]" : good ? "bg-[#e1f3ec] text-[#197b6d]" : "bg-[#eff2ef] text-[#74888c]"}`}>{icon}</span><span className={`rounded-full px-2 py-1 font-mono text-[10px] ${risk ? "bg-[#fff2cf] text-[#9c7024]" : good ? "bg-[#e2f3ed] text-[#207364]" : "bg-[#eef2f0] text-[#71858a]"}`}>{tag}</span></div><p className="mt-5 font-sans text-sm font-bold text-[#264e5d]">{name}</p><p className="mt-2 min-h-10 font-sans text-xs leading-5 text-[#73858a]">{detail}</p><button onClick={onClick} className={`mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2.5 font-sans text-xs font-bold transition active:scale-[0.98] ${risk ? "bg-[#f4ca61] text-[#624811] hover:bg-[#eeb942]" : "bg-[#eaf1ee] text-[#315867] hover:bg-[#dbeae4]"}`}>{action}<ChevronRight className="h-3.5 w-3.5" /></button></div>;
 }
 
-function MailScenario({ onLeave = () => undefined, onReset = () => undefined }: { onLeave?: () => void; onReset?: () => void }) {
-  return <div className="relative z-10 min-h-screen bg-[#f3f6f8]"><header className="border-b border-[#d7e0e7] bg-white/95 px-4 shadow-[0_1px_0_rgba(40,70,96,.04)] sm:px-6 lg:px-8"><div className="mx-auto flex h-[66px] max-w-[1560px] items-center justify-between gap-4"><div className="flex min-w-0 items-center gap-3"><button type="button" onClick={onLeave} className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[#d9e2e9] bg-white text-[#4f687e] transition hover:border-[#8ca8bb] hover:bg-[#f5f9fc] active:scale-[.97]" aria-label="返回体验中心"><ArrowLeft className="h-4 w-4" /></button><span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[#1f639e] text-white shadow-[0_6px_14px_rgba(31,99,158,.22)]"><Mail className="h-[18px] w-[18px]" /></span><div className="min-w-0"><p className="truncate font-sans text-[15px] font-bold text-[#23425d]">企业邮箱系统</p><p className="mt-0.5 font-mono text-[9px] tracking-[.13em] text-[#8397a8]">MAIL WORKSPACE</p></div></div><button type="button" onClick={onReset} className="inline-flex h-9 shrink-0 items-center gap-2 rounded-lg border border-[#d8e2e9] bg-white px-3.5 font-sans text-xs font-semibold text-[#526a7d] transition hover:border-[#9ab0c1] hover:bg-[#f6f9fb] active:scale-[.97]"><RotateCcw className="h-3.5 w-3.5" />一键重置</button></div></header><main className="mx-auto max-w-[1560px] px-3 py-4 sm:px-5 lg:px-7 lg:py-6"><ConfigurableMailDetail onReport={() => undefined} onAttachment={() => downloadMappedTrainingAsset(MAIL_SCENARIO_CONFIG.inbox.attachment.assetUrl, MAIL_SCENARIO_CONFIG.inbox.attachment.downloadName)} /></main></div>;
+function MailScenario({ onLeave = () => undefined, onReset = () => undefined, onAudioAfterCurrent = () => undefined }: { onLeave?: () => void; onReset?: () => void; onAudioAfterCurrent?: (step: number) => void }) {
+  const downloadAttachment = () => {
+    downloadMappedTrainingAsset(MAIL_SCENARIO_CONFIG.inbox.attachment.assetUrl, MAIL_SCENARIO_CONFIG.inbox.attachment.downloadName);
+    onAudioAfterCurrent(1);
+  };
+  return <div className="relative z-10 min-h-screen bg-[#f3f6f8]"><header className="border-b border-[#d7e0e7] bg-white/95 px-4 shadow-[0_1px_0_rgba(40,70,96,.04)] sm:px-6 lg:px-8"><div className="mx-auto flex h-[66px] max-w-[1560px] items-center justify-between gap-4"><div className="flex min-w-0 items-center gap-3"><button type="button" onClick={onLeave} className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[#d9e2e9] bg-white text-[#4f687e] transition hover:border-[#8ca8bb] hover:bg-[#f5f9fc] active:scale-[.97]" aria-label="返回体验中心"><ArrowLeft className="h-4 w-4" /></button><span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[#1f639e] text-white shadow-[0_6px_14px_rgba(31,99,158,.22)]"><Mail className="h-[18px] w-[18px]" /></span><div className="min-w-0"><p className="truncate font-sans text-[15px] font-bold text-[#23425d]">企业邮箱系统</p><p className="mt-0.5 font-mono text-[9px] tracking-[.13em] text-[#8397a8]">MAIL WORKSPACE</p></div></div><button type="button" onClick={onReset} className="inline-flex h-9 shrink-0 items-center gap-2 rounded-lg border border-[#d8e2e9] bg-white px-3.5 font-sans text-xs font-semibold text-[#526a7d] transition hover:border-[#9ab0c1] hover:bg-[#f6f9fb] active:scale-[.97]"><RotateCcw className="h-3.5 w-3.5" />一键重置</button></div></header><main className="mx-auto max-w-[1560px] px-3 py-4 sm:px-5 lg:px-7 lg:py-6"><ConfigurableMailDetail onReport={() => undefined} onAttachment={downloadAttachment} /></main></div>;
 }
 
 function MailWorkbench({ onOpen }: { onOpen: () => void }) {

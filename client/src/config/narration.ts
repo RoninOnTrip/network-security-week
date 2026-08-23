@@ -20,7 +20,7 @@ export const NARRATION_CONFIG = {
     backupText: "欢迎来到网络安全体验区，请选择体验场景。",
   },
   download: {
-    audioSrc: [trainingAsset("download-narration-entry-unified.wav"), trainingAsset("download-narration-open-unified.wav"), trainingAsset("download-narration-warning-unified.wav"), ""],
+    audioSrc: [trainingAsset("download-narration-entry-unified.wav"), trainingAsset("download-narration-open-repaired.wav"), trainingAsset("download-narration-warning-unified.wav"), ""],
     backupText: [
       "当前页面展示的是软件下载场景。此类页面的风险常见于域名相似拼写、来源不明，或软件名称、发布者与文件信息不一致。若继续使用，可能造成账号凭据、隐私或业务数据暴露。请选择你想要下载的软件。",
       "请在浏览器下载列表中打开已下载的内容。",
@@ -29,9 +29,9 @@ export const NARRATION_CONFIG = {
     ],
   },
   mail: {
-    audioSrc: ["", "", "", ""],
+    audioSrc: [trainingAsset("mail-narration-risk-and-download-unified.wav"), trainingAsset("download-narration-warning-unified.wav"), "", ""],
     backupText: [
-      "请查看这封邮件。常见的邮件安全风险包括伪造发件人、相似地址、异常链接以及来源不明的附件。请点击附件内容进行下载。",
+      "请注意，这封邮件可能存在伪造发件人、相似地址、异常链接和来源不明附件等风险。若误信并打开可疑内容，可能造成账号信息泄露、业务数据暴露或工作中断。请点击附件内容进行下载，并在浏览器下载列表中打开已下载的内容。",
       "",
       "",
       "",
