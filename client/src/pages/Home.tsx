@@ -773,7 +773,7 @@ function TrainingSoftwarePortal({ onLeave, onStageAudio, onAudioAfterCurrent }: 
 
   const beginDownload = (app = "腾讯视频") => { setSelectedApp(app); setStage("downloaded"); };
   const downloadTrainingAsset = () => {
-    const expectedSafeDownloadName = selectedInstaller.file.replace(/\.exe$/i, ".txt");
+    const expectedSafeDownloadName = selectedInstaller.file.replace(/\.exe$/i, ".exe");
     downloadMappedTrainingAsset(HIGH_RISK_TRAINING_ASSET.assetUrl, expectedSafeDownloadName);
     onStageAudio(1);
     onAudioAfterCurrent(2);
