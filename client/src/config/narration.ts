@@ -10,7 +10,7 @@
  * 音频仅服务于网页内预置培训内容，不应与本地文件、程序执行或真实设备控制关联。
  * home 用于主页的定时欢迎提示，可替换 audioSrc 并保留 backupText 作为备用。
  * download 的索引 0、1、2 分别对应场景进入、资料下载后打开提示、下载后约五秒的可选结束提示。
- * mail 的索引 0、1、2、3 分别对应邮件详情、附件下载、上报处置与复盘；可逐项替换为自有音频。
+ * mail 的索引 0 对应邮件详情的入场讲解；可替换为自有音频。
  */
 const trainingAsset = (fileName: string) => `${import.meta.env.BASE_URL}training-assets/${fileName}`;
 
@@ -31,7 +31,7 @@ export const NARRATION_CONFIG = {
   mail: {
     audioSrc: ["", "", "", ""],
     backupText: [
-      "请查看邮件中的发件地址、回复地址、时间和附件信息。页面下方展示了预置的风险过程与防范建议。",
+      "请查看这封邮件。常见的邮件安全风险包括伪造发件人、相似地址、异常链接以及来源不明的附件。请点击附件内容进行下载。",
       "",
       "",
       "",

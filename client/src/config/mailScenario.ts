@@ -9,7 +9,7 @@ const trainingAsset = (fileName: string) => `${import.meta.env.BASE_URL}training
 
 export const MAIL_SCENARIO_CONFIG = {
   productName: "企业邮箱系统",
-  productSubtitle: "ENTERPRISE MAIL SYSTEM · TRAINING VIEW",
+  productSubtitle: "ENTERPRISE MAIL SYSTEM",
   mailboxDomain: "mail.hailing.example-training.local",
   accountLabel: "华辰集团演示账号",
   accountAddress: "lin.yan@hailing.example-training.local",
@@ -31,9 +31,9 @@ export const MAIL_SCENARIO_CONFIG = {
       "海岭供应链协同中心",
     ],
     attachment: {
-      displayName: "项目会议资料更新_培训样例.txt",
-      downloadName: "项目会议资料更新_培训样例.txt",
-      metadata: "471 B · 培训资料附件",
+      displayName: "项目会议资料更新.txt",
+      downloadName: "项目会议资料更新.txt",
+      metadata: "471 B · 文本文档",
       assetUrl: trainingAsset("project-meeting-material-update-training.txt"),
     },
   },
