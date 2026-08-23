@@ -330,7 +330,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-[#f4f5f0] text-[#152c3a]">
+    <main className={`min-h-screen ${view === "home" ? "bg-[#061f31] text-white" : "bg-[#f4f5f0] text-[#152c3a]"}`}>
       <div className="app-grain pointer-events-none fixed inset-0 z-0" />
       {view === "home" && <div className="home-ambient" aria-hidden="true"><span className="home-grid" /><span className="home-orbit home-orbit-a" /><span className="home-orbit home-orbit-b" /><span className="home-orbit home-orbit-c" /><span className="home-stream home-stream-a" /><span className="home-stream home-stream-b" /><span className="home-stream home-stream-c" /><span className="home-scan home-scan-a" /><span className="home-scan home-scan-b" /><span className="home-node home-node-a" /><span className="home-node home-node-b" /><span className="home-node home-node-c" /></div>}
       <audio ref={audioRef} preload="auto" />
@@ -477,14 +477,14 @@ function CommandEntryGrid({ openScene, welcomeAudioPending, playHomeWelcome }: {
   };
 
   return (
-    <div className="relative z-10 mx-auto min-h-screen max-w-[1440px] px-4 py-4 sm:px-6 sm:py-6 lg:px-9 lg:py-8">
-      <div className="home-command-shell overflow-hidden border border-[#244d63] bg-[#09283c] shadow-[0_28px_80px_rgba(10,43,61,.28)]">
-        <header className="relative z-10 flex items-center justify-between border-b border-white/10 px-5 py-4 sm:px-7 sm:py-5">
+    <div className="relative z-10 min-h-screen">
+      <div className="home-command-shell min-h-screen overflow-hidden">
+        <header className="relative z-10 flex items-center justify-between border-b border-white/10 px-5 py-4 sm:px-8 sm:py-5 lg:px-12">
           <BrandMark inverse />
           <div className="flex items-center gap-3 font-mono text-[9px] tracking-[.18em] text-[#b5d1d5]"><span className="hidden sm:inline">NETWORK SECURITY WEEK</span><span className="h-1.5 w-1.5 rounded-full bg-[#69e0c4] shadow-[0_0_12px_#69e0c4]" /><span>READY</span></div>
         </header>
 
-        <main className="relative px-5 pb-7 pt-8 sm:px-7 sm:pb-10 sm:pt-12 lg:px-10 lg:pb-12 lg:pt-16">
+        <main className="relative z-10 px-5 pb-7 pt-8 sm:px-8 sm:pb-10 sm:pt-12 lg:px-12 lg:pb-12 lg:pt-16">
           <div className="home-command-grid absolute inset-0" aria-hidden="true" />
           <div className="home-command-orbit home-command-orbit-a" aria-hidden="true" />
           <div className="home-command-orbit home-command-orbit-b" aria-hidden="true" />
@@ -513,7 +513,7 @@ function CommandEntryGrid({ openScene, welcomeAudioPending, playHomeWelcome }: {
           </section>
         </main>
 
-        <footer className="relative z-10 flex justify-between border-t border-white/10 px-5 py-4 font-mono text-[9px] tracking-[.16em] text-[#91b3bb] sm:px-7"><span>NETWORK SECURITY WEEK</span><span>COMMAND CANVAS / 2026</span></footer>
+        <footer className="relative z-10 flex justify-between border-t border-white/10 px-5 py-4 font-mono text-[9px] tracking-[.16em] text-[#91b3bb] sm:px-8 lg:px-12"><span>NETWORK SECURITY WEEK</span><span>COMMAND CANVAS / 2026</span></footer>
       </div>
     </div>
   );
