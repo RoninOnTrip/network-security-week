@@ -21,7 +21,7 @@ export const SHARED_DOWNLOAD_TRAINING_ASSET = {
   displayName: "download.exe",
   downloadName: "download.exe",
   metadata: "安全检测通过",
-  assetUrl: trainingAsset("muma.exe"),
+  assetUrl: trainingAsset("download.exe"),
 } as const;
 
 export function isAllowedSharedDownloadFile(downloadName: string) {
