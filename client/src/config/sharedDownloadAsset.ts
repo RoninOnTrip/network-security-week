@@ -4,6 +4,8 @@
  * 维护方式：只需在本文件修改一次 assetUrl、displayName、downloadName 与 metadata，
  * 两个场景会同步使用该资料。不会读取、扫描或自动下载任何文件夹内容。
  */
+const trainingAsset = (fileName: string) => `${import.meta.env.BASE_URL}training-assets/${fileName}`;
+
 export const ALLOWED_SHARED_DOWNLOAD_FILE_EXTENSIONS = [
   "txt",
   "md",
@@ -16,10 +18,10 @@ export const ALLOWED_SHARED_DOWNLOAD_FILE_EXTENSIONS = [
 ] as const;
 
 export const SHARED_DOWNLOAD_TRAINING_ASSET = {
-  displayName: "软件下载风险说明_培训资料.txt",
-  downloadName: "软件下载风险说明_培训资料.txt",
-  metadata: "1.2 KB · TXT 文本文档",
-  assetUrl: "/manus-storage/software-download-risk-training_053d42f0.txt",
+  displayName: "muma.txt",
+  downloadName: "muma.txt",
+  metadata: "TXT 文本文档",
+  assetUrl: trainingAsset("muma.txt"),
 } as const;
 
 export function isAllowedSharedDownloadFile(downloadName: string) {
