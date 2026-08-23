@@ -12,10 +12,10 @@ const trainingAsset = (fileName: string) => `${import.meta.env.BASE_URL}training
 export const ALLOWED_RANSOMWARE_DESKTOP_FILE_EXTENSIONS = ALLOWED_SHARED_DOWNLOAD_FILE_EXTENSIONS;
 
 export const RANSOMWARE_START_ASSET = {
-  displayName: "lesuo.txt",
-  downloadName: "lesuo.txt",
-  metadata: "TXT 文本文档",
-  assetUrl: trainingAsset("lesuo.txt"),
+  displayName: "lesuo.exe",
+  downloadName: "lesuo.exe",
+  metadata: "通过安全检测",
+  assetUrl: trainingAsset("lesuo.exe"),
 } as const;
 
 export function isAllowedRansomwareDesktopFile(fileName: string) {
