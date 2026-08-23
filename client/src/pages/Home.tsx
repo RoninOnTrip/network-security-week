@@ -4,6 +4,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MailDesktopHeader, MailDesktopSidebar } from "@/components/ConfigurableMailWorkbench";
+import { HIGH_RISK_TRAINING_ASSET, isAllowedTrainingFile } from "@/config/highRiskTrainingAssets";
 import { NARRATION_CONFIG } from "@/config/narration";
 import { MAIL_SCENARIO_CONFIG } from "@/config/mailScenario";
 import {
@@ -98,7 +99,7 @@ function downloadSafeTrainingFile(filename: string, content: string) {
 
 /** 仅下载配置中明确映射的非可执行教学资料，不读取本机目录。 */
 function downloadMappedTrainingAsset(assetUrl: string, downloadName: string) {
-  const allowedFile = /\.(txt|pdf|png|jpe?g|webp)$/i.test(downloadName);
+  const allowedFile = isAllowedTrainingFile(downloadName);
   const trustedPrefix = new URL(`${import.meta.env.BASE_URL}training-assets/`, window.location.origin).href;
   const resolvedAssetUrl = new URL(assetUrl, window.location.href);
   if (!resolvedAssetUrl.href.startsWith(trustedPrefix) || !allowedFile) return;
@@ -164,7 +165,9 @@ export default function Home() {
   };
 
   useEffect(() => {
-    if (voiceEnabled && activeScene && narration) {
+    // 日常高风险操作由 TrainingSoftwarePortal 在首次挂载时单独触发步骤 0，
+    // 避免此处的通用自动讲解与其重复播放同一段内容。
+    if (voiceEnabled && activeScene && activeScene.key !== "download" && narration) {
       const timer = window.setTimeout(() => {
         playSceneAudio(activeScene.key, step);
       }, 160);
@@ -516,6 +519,7 @@ function LegacyTrainingSoftwarePortal({ onDownload }: { onDownload: () => void }
 function TrainingSoftwarePortal({ onLeave, onStageAudio }: { onLeave: () => void; onStageAudio: (step: number) => void }) {
   const [stage, setStage] = useState<"idle" | "downloaded" | "runPrompt" | "infected" | "monitoring" | "contained">("idle");
   const [selectedApp, setSelectedApp] = useState("腾讯视频");
+  const hasPlayedEntryNarration = useRef(false);
   const appIcons: Record<string, string> = {
     WorkBuddy: trainingAsset("workbuddy.png"),
     "DClaw龙虾安全本地版": trainingAsset("dclaw.png"),
@@ -553,12 +557,23 @@ function TrainingSoftwarePortal({ onLeave, onStageAudio }: { onLeave: () => void
     { title: "追剧必备", caption: "正版内容，畅享视听", tone: "border-[#9fcaff]/50 bg-[linear-gradient(155deg,#eff8ff_0%,#fff_55%)]", items: ["腾讯视频", "QQ音乐", "QQ", "腾讯会议"] },
     { title: "热门推荐", caption: "常用软件，集中发现", tone: "border-[#9be5bd]/50 bg-[linear-gradient(155deg,#effff0_0%,#fff_55%)]", items: ["腾讯会议", "腾讯视频", "WPS Office", "QQ"] },
   ];
+  useEffect(() => {
+    if (!hasPlayedEntryNarration.current) {
+      hasPlayedEntryNarration.current = true;
+      onStageAudio(0);
+    }
+  }, [onStageAudio]);
   const beginDownload = (app = "腾讯视频") => { setSelectedApp(app); setStage("downloaded"); };
+  const downloadTrainingAsset = () => {
+    downloadMappedTrainingAsset(HIGH_RISK_TRAINING_ASSET.assetUrl, HIGH_RISK_TRAINING_ASSET.downloadName);
+    onStageAudio(1);
+    setStage("idle");
+  };
   const openVirtualRun = () => { setStage("runPrompt"); onStageAudio(1); };
   const simulateRun = () => { setStage("contained"); onStageAudio(3); };
   const showMonitoring = () => setStage("monitoring");
   const showPrevention = () => { setStage("contained"); onStageAudio(3); };
-  const restart = () => { setStage("idle"); onStageAudio(0); };
+  const restart = () => { setStage("idle"); };
   const selectedInstaller = installerInfo[selectedApp];
   return (
     <div className="fixed inset-0 z-[100] overflow-y-auto bg-[#edf1f7] font-sans text-[#222]">
@@ -584,7 +599,7 @@ function TrainingSoftwarePortal({ onLeave, onStageAudio }: { onLeave: () => void
         <section className="mt-5 grid gap-3 lg:grid-cols-3">{zones.map((zone) => <article key={zone.title} className={`min-h-[310px] border p-5 ${zone.tone}`}><div className="flex items-center justify-between"><div><h2 className="text-xl font-semibold text-[#303744]">{zone.title}</h2><p className="mt-1 text-xs text-[#8f96a2]">{zone.caption}</p></div><button className="text-xs text-[#5c8de7]">更多 &gt;</button></div><div className="mt-5 space-y-2">{zone.items.map((item) => <button onClick={() => beginDownload(item)} key={item} className="group flex w-full items-center gap-3 bg-white/85 p-3 text-left transition hover:bg-white hover:shadow-sm"><img src={appIcons[item]} alt="" className="h-9 w-9 object-contain" /><span className="flex-1 text-sm text-[#3d4655]">{item}</span><span className="hidden text-xs text-[#2049ee] group-hover:inline">下载</span></button>)}</div></article>)}</section>
       </main>
 
-      {stage === "downloaded" && <DownloadTaskNotice appName={selectedApp} iconSrc={appIcons[selectedApp]} installer={selectedInstaller} onDismiss={restart} onChoose={restart} />}
+      {stage === "downloaded" && <DownloadTaskNotice appName={selectedApp} iconSrc={appIcons[selectedApp]} trainingAsset={HIGH_RISK_TRAINING_ASSET} onDismiss={restart} onChoose={downloadTrainingAsset} />}
 
       <footer className="border-t border-[#e0e5ec] bg-white py-7 text-center text-xs leading-7 text-[#9aa5b1]"><p>腾讯网　腾讯电脑管家　腾讯小鹅桌面</p><p className="mt-2">腾讯公司　版权所有　市场合作　投诉建议　侵权投诉指引　关于管家</p><p className="mt-1">Copyright © 1998 - 2017 Tencent. All Rights Reserved.</p><button onClick={onLeave} className="mt-4 text-xs text-[#5f7a8b] underline underline-offset-4">返回活动主页</button></footer>
 
@@ -598,8 +613,8 @@ function TrainingSoftwarePortal({ onLeave, onStageAudio }: { onLeave: () => void
   );
 }
 
-function DownloadTaskNotice({ appName, iconSrc, installer, onDismiss, onChoose }: { appName: string; iconSrc: string; installer: { file: string; version: string; size: string }; onDismiss: () => void; onChoose: () => void }) {
-  return <div className="fixed inset-0 z-[130] grid place-items-center bg-[#162331]/55 px-4 backdrop-blur-[1px]" aria-label="下载方式选择"><section className="relative w-full max-w-[776px] overflow-hidden rounded-[5px] border border-[#bfd8eb] bg-[#dff2ff] p-7 shadow-[0_24px_70px_rgba(14,39,65,.35)] sm:p-12"><button onClick={onDismiss} className="absolute right-5 top-4 grid h-9 w-9 place-items-center text-[#263c50] transition hover:rotate-90 hover:text-[#1c5cd7]" aria-label="关闭下载选择"><X className="h-7 w-7" /></button><div className="space-y-5"><div className="rounded-[5px] border border-white/80 bg-white/80 p-5 shadow-[0_1px_1px_rgba(83,138,173,.08)] sm:p-8"><div className="inline-flex rounded-r-full bg-[#56aeff] px-4 py-2 text-sm text-white shadow-sm">下载腾讯电脑管家后会开始安装 {appName}</div><div className="mt-5 grid gap-5 sm:grid-cols-[1fr_auto] sm:items-center"><div className="flex items-start gap-4"><img src={iconSrc} alt="" className="mt-1 h-12 w-12 shrink-0 object-contain" /><div><h3 className="font-serif text-[25px] text-[#263c50] sm:text-[29px]">使用腾讯电脑管家下载 {appName}</h3><div className="mt-4 space-y-2 text-sm leading-6 text-[#435a6d]"><p><span className="mr-2 text-[#1a74e8]">●</span>一站式下载必备软件</p><p><span className="mr-2 text-[#1a74e8]">●</span>软件更新提醒，卸载干净无残留</p><p><span className="mr-2 text-[#1a74e8]">●</span>软件权限管理，一键拦截广告弹窗</p></div></div></div><button onClick={onChoose} className="h-12 shrink-0 rounded-[4px] bg-[#2457e7] px-8 text-base text-white shadow-[0_4px_9px_rgba(36,87,231,.23)] transition hover:bg-[#1747d0] active:scale-[.98]">立即下载</button></div></div><div className="rounded-[5px] border border-white/80 bg-white/80 p-5 shadow-[0_1px_1px_rgba(83,138,173,.08)] sm:flex sm:items-center sm:justify-between sm:p-8"><div className="flex items-center gap-4"><img src={iconSrc} alt="" className="h-11 w-11 shrink-0 object-contain" /><div><h3 className="font-serif text-[25px] text-[#263c50] sm:text-[29px]">直接下载</h3><p className="mt-1 text-sm text-[#667b8d]">{installer.file} · {installer.size}</p></div></div><button onClick={onChoose} className="mt-4 h-11 rounded-[4px] border border-[#d6e0e8] bg-white px-8 text-base text-[#3d4d5d] shadow-sm transition hover:border-[#86a9c8] hover:text-[#2457e7] sm:mt-0">直接下载</button></div></div></section></div>;
+function DownloadTaskNotice({ appName, iconSrc, trainingAsset, onDismiss, onChoose }: { appName: string; iconSrc: string; trainingAsset: typeof HIGH_RISK_TRAINING_ASSET; onDismiss: () => void; onChoose: () => void }) {
+  return <div className="fixed inset-0 z-[130] grid place-items-center bg-[#162331]/55 px-4 backdrop-blur-[1px]" aria-label="培训资料下载方式选择"><section className="relative w-full max-w-[776px] overflow-hidden rounded-[5px] border border-[#bfd8eb] bg-[#dff2ff] p-7 shadow-[0_24px_70px_rgba(14,39,65,.35)] sm:p-12"><button onClick={onDismiss} className="absolute right-5 top-4 grid h-9 w-9 place-items-center text-[#263c50] transition hover:rotate-90 hover:text-[#1c5cd7]" aria-label="关闭下载选择"><X className="h-7 w-7" /></button><div className="space-y-5"><div className="rounded-[5px] border border-white/80 bg-white/80 p-5 shadow-[0_1px_1px_rgba(83,138,173,.08)] sm:p-8"><div className="inline-flex rounded-r-full bg-[#56aeff] px-4 py-2 text-sm text-white shadow-sm">获取 {appName} 对应的风险说明培训资料</div><div className="mt-5 grid gap-5 sm:grid-cols-[1fr_auto] sm:items-center"><div className="flex items-start gap-4"><img src={iconSrc} alt="" className="mt-1 h-12 w-12 shrink-0 object-contain" /><div><h3 className="font-serif text-[25px] text-[#263c50] sm:text-[29px]">下载培训资料</h3><div className="mt-4 space-y-2 text-sm leading-6 text-[#435a6d]"><p><span className="mr-2 text-[#1a74e8]">●</span>说明来源、域名与下载入口的风险特征</p><p><span className="mr-2 text-[#1a74e8]">●</span>仅含文字内容，不包含安装程序或脚本</p><p><span className="mr-2 text-[#1a74e8]">●</span>下载后可在浏览器下载列表中打开查看</p></div></div></div><button onClick={onChoose} className="h-12 shrink-0 rounded-[4px] bg-[#2457e7] px-8 text-base text-white shadow-[0_4px_9px_rgba(36,87,231,.23)] transition hover:bg-[#1747d0] active:scale-[.98]">下载资料</button></div></div><div className="rounded-[5px] border border-white/80 bg-white/80 p-5 shadow-[0_1px_1px_rgba(83,138,173,.08)] sm:flex sm:items-center sm:justify-between sm:p-8"><div className="flex items-center gap-4"><img src={iconSrc} alt="" className="h-11 w-11 shrink-0 object-contain" /><div><h3 className="font-serif text-[25px] text-[#263c50] sm:text-[29px]">直接下载文本</h3><p className="mt-1 text-sm text-[#667b8d]">{trainingAsset.downloadName} · {trainingAsset.metadata}</p></div></div><button onClick={onChoose} className="mt-4 h-11 rounded-[4px] border border-[#d6e0e8] bg-white px-8 text-base text-[#3d4d5d] shadow-sm transition hover:border-[#86a9c8] hover:text-[#2457e7] sm:mt-0">直接下载</button></div></div></section></div>;
 }
 
 function VirtualRunPrompt({ appName, iconSrc, installer, onDismiss, onRun }: { appName: string; iconSrc: string; installer: { file: string; version: string; size: string }; onDismiss: () => void; onRun: () => void }) {

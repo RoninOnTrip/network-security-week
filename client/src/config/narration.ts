@@ -16,13 +16,13 @@ export const NARRATION_CONFIG = {
   download: {
     audioSrc: [
       "",
-      "",
+      trainingAsset("open-downloaded-content-guide.wav"),
       trainingAsset("risk-download-step-3-impact.wav"),
       trainingAsset("risk-download-step-4-prevention.wav"),
     ],
     backupText: [
-      "请选择你想要下载的软件进行下载。",
-      "",
+      "当前页面展示的是软件下载场景。此类页面的风险常见于域名相似拼写、来源不明、下载入口催促操作，或软件名称、发布者与文件信息不一致。若继续使用，可能造成账号凭据、隐私或业务数据暴露。请选择你想要下载的软件。",
+      "请在浏览器下载列表中打开已下载的内容。",
       "",
       "",
     ],
