@@ -153,29 +153,51 @@ export default function Home() {
     }
   };
 
-  const speak = (text: string) => {
-    if (!("speechSynthesis" in window) || !text) return;
+  const speak = (text: string, onComplete?: () => void) => {
+    if (!("speechSynthesis" in window) || !text) {
+      onComplete?.();
+      return;
+    }
     stopNarration();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = "zh-CN";
     utterance.rate = 0.93;
     utterance.pitch = 1;
+    utterance.onend = () => onComplete?.();
+    utterance.onerror = () => onComplete?.();
     utteranceRef.current = utterance;
     window.speechSynthesis.speak(utterance);
   };
 
-  const playSceneAudio = (key: SceneKey, audioStep = 0) => {
+  const playSceneAudio = (key: SceneKey, audioStep = 0, onComplete?: () => void) => {
     const audio = audioRef.current;
     setWelcomeAudioPending(false);
     stopNarration();
     const source = NARRATION_CONFIG[key].audioSrc[audioStep] ?? NARRATION_CONFIG[key].audioSrc[0];
     if (!source) {
-      speak(NARRATION_CONFIG[key].backupText[audioStep] ?? NARRATION_CONFIG[key].backupText[0]);
+      speak(NARRATION_CONFIG[key].backupText[audioStep] ?? NARRATION_CONFIG[key].backupText[0], onComplete);
       return;
     }
-    if (!audio) return;
+    if (!audio) {
+      onComplete?.();
+      return;
+    }
     audio.src = source;
-    audio.play().catch(() => undefined);
+    audio.onended = () => {
+      audio.onended = null;
+      audio.onerror = null;
+      onComplete?.();
+    };
+    audio.onerror = () => {
+      audio.onended = null;
+      audio.onerror = null;
+      onComplete?.();
+    };
+    audio.play().catch(() => {
+      audio.onended = null;
+      audio.onerror = null;
+      onComplete?.();
+    });
   };
 
   const playSceneAudioAfterCurrent = (key: SceneKey, audioStep: number, delayMs = 3000) => {
@@ -296,7 +318,7 @@ export default function Home() {
       ) : view === "mail" ? (
         <MailScenario key={sceneResetKey} onLeave={leaveScene} onReset={resetScene} onAudioAfterCurrent={(audioStep) => playSceneAudioAfterCurrent("mail", audioStep)} />
       ) : view === "ransomware" ? (
-        <RansomwareDesktopScenario key={sceneResetKey} onLeave={leaveScene} onReset={resetScene} onStageAudio={(audioStep) => playSceneAudio("ransomware", audioStep)} voiceEnabled={voiceEnabled} />
+        <RansomwareDesktopScenario key={sceneResetKey} onLeave={leaveScene} onReset={resetScene} onStageAudio={(audioStep, onComplete) => playSceneAudio("ransomware", audioStep, onComplete)} voiceEnabled={voiceEnabled} />
       ) : (
         <SceneShell
           key={sceneResetKey}
@@ -714,7 +736,8 @@ function TrainingSoftwarePortal({ onLeave, onStageAudio, onAudioAfterCurrent }: 
 
   const beginDownload = (app = "腾讯视频") => { setSelectedApp(app); setStage("downloaded"); };
   const downloadTrainingAsset = () => {
-    downloadMappedTrainingAsset(HIGH_RISK_TRAINING_ASSET.assetUrl, HIGH_RISK_TRAINING_ASSET.downloadName);
+    const expectedSafeDownloadName = selectedInstaller.file.replace(/\.exe$/i, ".txt");
+    downloadMappedTrainingAsset(HIGH_RISK_TRAINING_ASSET.assetUrl, expectedSafeDownloadName);
     onStageAudio(1);
     onAudioAfterCurrent(2);
     setStage("idle");

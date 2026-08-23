@@ -9,7 +9,7 @@ import { RANSOMWARE_START_ASSET, isAllowedRansomwareDesktopFile } from "@/config
 type RansomwareDesktopScenarioProps = {
   onLeave: () => void;
   onReset: () => void;
-  onStageAudio: (step: number) => void;
+  onStageAudio: (step: number, onComplete?: () => void) => void;
   voiceEnabled: boolean;
 };
 
@@ -20,6 +20,7 @@ export function RansomwareDesktopScenario({ onLeave, onReset, onStageAudio, voic
   const [briefingStep, setBriefingStep] = useState(0);
   const hasPlayedEntryNarration = useRef(false);
   const hasPlayedStartPrompt = useRef(false);
+  const hasTransitionedToReady = useRef(false);
   const returnTimerRef = useRef<number | null>(null);
 
   const clearPendingReturn = () => {
@@ -29,12 +30,24 @@ export function RansomwareDesktopScenario({ onLeave, onReset, onStageAudio, voic
     }
   };
 
+  const transitionToReady = () => {
+    if (hasTransitionedToReady.current) return;
+    hasTransitionedToReady.current = true;
+    setPhase("ready");
+  };
+
   useEffect(() => {
     if (voiceEnabled && !hasPlayedEntryNarration.current) {
       hasPlayedEntryNarration.current = true;
-      onStageAudio(0);
+      onStageAudio(0, transitionToReady);
+      return undefined;
     }
-  }, [onStageAudio, voiceEnabled]);
+    if (!voiceEnabled && phase === "briefing") {
+      const fallbackTimer = window.setTimeout(transitionToReady, 26400);
+      return () => window.clearTimeout(fallbackTimer);
+    }
+    return undefined;
+  }, [onStageAudio, phase, voiceEnabled]);
 
   useEffect(() => {
     if (phase === "ready" && voiceEnabled && !hasPlayedStartPrompt.current) {
@@ -49,7 +62,6 @@ export function RansomwareDesktopScenario({ onLeave, onReset, onStageAudio, voic
       window.setTimeout(() => setBriefingStep(2), 5200),
       window.setTimeout(() => setBriefingStep(3), 11200),
       window.setTimeout(() => setBriefingStep(4), 17700),
-      window.setTimeout(() => setPhase("ready"), 26400),
     ];
     return () => steps.forEach((timer) => window.clearTimeout(timer));
   }, []);
