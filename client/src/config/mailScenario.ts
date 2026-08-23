@@ -1,12 +1,12 @@
+import { SHARED_DOWNLOAD_TRAINING_ASSET } from "@/config/sharedDownloadAsset";
+
 /**
  * 钓鱼邮件教学内容配置
  *
  * 修改邮件标题、发件人、正文、收件时间和附件显示信息时，只需编辑此文件。
- * 附件必须使用 client/public/training-assets/ 中的明确教学资料；仅支持 txt、pdf、png、jpg、jpeg、webp 等不可执行文件。
- * 请使用 trainingAsset("文件名") 填入 attachment.assetUrl，切勿填写本机路径或可执行文件地址。
+ * 附件必须使用已上传至静态资源存储的明确教学资料；仅支持 txt、pdf、png、jpg、jpeg、webp 等不可执行文件。
+ * 请将新资料上传后返回的 /manus-storage/... 地址填入 attachment.assetUrl，切勿填写本机路径或可执行文件地址。
  */
-const trainingAsset = (fileName: string) => `${import.meta.env.BASE_URL}training-assets/${fileName}`;
-
 export const MAIL_SCENARIO_CONFIG = {
   productName: "企业邮箱系统",
   productSubtitle: "ENTERPRISE MAIL SYSTEM",
@@ -30,12 +30,7 @@ export const MAIL_SCENARIO_CONFIG = {
       "如有疑问，请联系项目服务台统一处理。",
       "海岭供应链协同中心",
     ],
-    attachment: {
-      displayName: "项目会议资料更新.txt",
-      downloadName: "项目会议资料更新.txt",
-      metadata: "471 B · 文本文档",
-      assetUrl: trainingAsset("project-meeting-material-update-training.txt"),
-    },
+    attachment: SHARED_DOWNLOAD_TRAINING_ASSET,
   },
   routineMessages: [
     { sender: "行政服务中心", subject: "周例会提醒：会议室调整", time: "10:05" },
