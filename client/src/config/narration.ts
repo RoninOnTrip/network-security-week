@@ -20,7 +20,7 @@ export const NARRATION_CONFIG = {
     backupText: "欢迎来到网络安全体验区，请选择体验场景。",
   },
   download: {
-    audioSrc: ["", trainingAsset("open-downloaded-content-guide.wav"), trainingAsset("security-warning-mandarin.wav"), ""],
+    audioSrc: [trainingAsset("download-narration-entry-unified.wav"), trainingAsset("download-narration-open-unified.wav"), trainingAsset("download-narration-warning-unified.wav"), ""],
     backupText: [
       "当前页面展示的是软件下载场景。此类页面的风险常见于域名相似拼写、来源不明，或软件名称、发布者与文件信息不一致。若继续使用，可能造成账号凭据、隐私或业务数据暴露。请选择你想要下载的软件。",
       "请在浏览器下载列表中打开已下载的内容。",
@@ -38,12 +38,17 @@ export const NARRATION_CONFIG = {
     ],
   },
   ransomware: {
-    audioSrc: [trainingAsset("ransomware-scenario-narration.wav"), "", "", ""],
+    audioSrc: [
+      trainingAsset("ransomware-narration-entry-unified.wav"),
+      trainingAsset("ransomware-narration-document-unified.wav"),
+      trainingAsset("ransomware-narration-locked-unified.wav"),
+      trainingAsset("ransomware-narration-response-unified.wav"),
+    ],
     backupText: [
-      "虚拟业务终端收到一份供应商资料。真实事件中的异常往往先以单个文件无法打开或终端告警的形式出现。",
-      "异常已经出现。请先判断哪一个动作最能阻断影响扩散。不要把时间耗费在反复打开文件上。",
-      "此处展示的是浏览器内的虚拟勒索效果，不会修改任何真实文件。正确处置强调隔离、报告、保留现场与依预案恢复。",
-      "推演结束。离线备份、最小权限、及时更新和定期演练，是恢复业务韧性的关键基础。",
+      "当前为浏览器内的虚拟业务桌面。勒索软件常通过伪装文档、钓鱼邮件附件、远程服务弱口令或未修补漏洞进入终端。请先打开任意文档查看正常业务资料。",
+      "文档当前可以正常浏览。请留意名称相近的供应商补充资料；真实攻击中，伪装文件常利用业务往来的信任关系诱导打开。",
+      "当伪装文档被打开后，虚拟桌面中的文件会被锁定。真实事件可能导致业务中断、数据不可用和恢复成本上升。",
+      "不要反复尝试打开文件或进行处置操作。应优先断开网络、报告安全团队、保留现场，并依预案从离线备份恢复；同时做好补丁更新、最小权限和定期演练。",
     ],
   },
 } as const;

@@ -4,6 +4,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MailDesktopHeader, MailDesktopSidebar } from "@/components/ConfigurableMailWorkbench";
+import { RansomwareDesktopScenario } from "@/components/RansomwareDesktopScenario";
 import { HIGH_RISK_TRAINING_ASSET, isAllowedTrainingFile } from "@/config/highRiskTrainingAssets";
 import { NARRATION_CONFIG } from "@/config/narration";
 import { MAIL_SCENARIO_CONFIG } from "@/config/mailScenario";
@@ -189,7 +190,7 @@ export default function Home() {
   useEffect(() => {
     // 日常高风险操作由 TrainingSoftwarePortal 在首次挂载时单独触发步骤 0，
     // 避免此处的通用自动讲解与其重复播放同一段内容。
-    if (voiceEnabled && activeScene && activeScene.key !== "download" && narration) {
+    if (voiceEnabled && activeScene && activeScene.key !== "download" && activeScene.key !== "ransomware" && narration) {
       const timer = window.setTimeout(() => {
         playSceneAudio(activeScene.key, step);
       }, 160);
@@ -265,6 +266,8 @@ export default function Home() {
         <TrainingSoftwarePortal key={sceneResetKey} onLeave={leaveScene} onStageAudio={(audioStep) => playSceneAudio("download", audioStep)} />
       ) : view === "mail" ? (
         <MailScenario key={sceneResetKey} onLeave={leaveScene} onReset={resetScene} />
+      ) : view === "ransomware" ? (
+        <RansomwareDesktopScenario key={sceneResetKey} onLeave={leaveScene} onReset={resetScene} onStageAudio={(audioStep: number) => playSceneAudio("ransomware", audioStep)} voiceEnabled={voiceEnabled} />
       ) : (
         <SceneShell
           key={sceneResetKey}
