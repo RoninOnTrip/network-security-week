@@ -150,6 +150,13 @@
   .home-node-a { top: 18%; left: 16%; }
   .home-node-b { top: 42%; right: 17%; background: #c48a32; box-shadow: 0 0 0 6px rgba(196,138,50,.08), 0 0 17px rgba(196,138,50,.54); animation-delay: .8s; }
   .home-node-c { bottom: 18%; left: 41%; background: #c75e54; box-shadow: 0 0 0 6px rgba(199,94,84,.08), 0 0 17px rgba(199,94,84,.48); animation-delay: 1.6s; }
+  /* 设计提醒：首页主屏以“行动指挥室”深海军蓝画布强化聚焦感；动画仅表达低频扫描与坐标流动。 */
+  .home-command-shell { isolation: isolate; min-height: calc(100vh - 2rem); }
+  .home-command-grid { opacity: .56; background-image: linear-gradient(rgba(150, 222, 215, .10) 1px, transparent 1px), linear-gradient(90deg, rgba(150, 222, 215, .10) 1px, transparent 1px), radial-gradient(circle at 12% 16%, rgba(86, 214, 192, .20), transparent 28%), radial-gradient(circle at 85% 74%, rgba(225, 174, 84, .15), transparent 26%); background-size: 42px 42px, 42px 42px, auto, auto; mask-image: linear-gradient(to bottom, black, rgba(0,0,0,.86) 75%, transparent); }
+  .home-command-orbit { position: absolute; z-index: 0; display: block; width: 34rem; height: 15rem; border: 1px solid rgba(134, 224, 202, .20); border-radius: 999px; filter: drop-shadow(0 0 20px rgba(80, 208, 182, .13)); }
+  .home-command-orbit-a { top: 5%; right: -10rem; transform: rotate(-19deg); animation: orbit-float 14s ease-in-out infinite alternate; }
+  .home-command-orbit-b { bottom: -3rem; left: -9rem; width: 27rem; height: 11rem; border-color: rgba(241, 198, 99, .18); transform: rotate(20deg); animation: orbit-float 18s ease-in-out infinite alternate-reverse; }
+  .home-command-scan { position: absolute; z-index: 0; top: 46%; left: -16%; width: 72%; height: 2px; transform: rotate(-9deg); background: linear-gradient(90deg, transparent, rgba(105, 224, 196, .18), rgba(105, 224, 196, .95), rgba(242, 201, 103, .24), transparent); box-shadow: 0 0 18px rgba(105, 224, 196, .46); animation: scan-advance 11s cubic-bezier(.45,.05,.55,.95) infinite; }
   .hero-visual::after { content: ""; position: absolute; inset: 0; background: linear-gradient(116deg, rgba(255,255,255,.34), transparent 37%, rgba(29,131,117,.12)); pointer-events: none; }
   .task-visual { background: linear-gradient(135deg, #dfece7, #edf3f0); }
   .task-visual-mail { background: linear-gradient(135deg, #f3ecdb, #f8f4e9); }
