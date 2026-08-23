@@ -16,8 +16,8 @@ const trainingAsset = (fileName: string) => `${import.meta.env.BASE_URL}training
 
 export const NARRATION_CONFIG = {
   home: {
-    audioSrc: trainingAsset("home-welcome-experience.wav"),
-    backupText: "欢迎体验网络安全周。请选择一个场景，开始安全体验。",
+    audioSrc: trainingAsset("home-welcome-security-experience.wav"),
+    backupText: "欢迎来到网络安全体验区，请选择体验场景。",
   },
   download: {
     audioSrc: ["", trainingAsset("open-downloaded-content-guide.wav"), "", ""],

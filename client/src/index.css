@@ -86,6 +86,17 @@
 
 @layer components {
   .app-grain { opacity: .26; background-image: radial-gradient(rgba(22,70,82,.16) .55px, transparent .55px); background-size: 5px 5px; mix-blend-mode: multiply; }
+  .home-ambient { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; background: radial-gradient(circle at 8% 12%, rgba(91, 207, 190, .22), transparent 27%), radial-gradient(circle at 89% 22%, rgba(226, 187, 94, .18), transparent 25%), radial-gradient(circle at 69% 88%, rgba(207, 91, 78, .13), transparent 28%); }
+  .home-ambient::before { content: ""; position: absolute; inset: -24%; opacity: .72; background: linear-gradient(118deg, transparent 21%, rgba(67, 153, 145, .12) 41%, transparent 49%, rgba(226, 188, 107, .12) 66%, transparent 75%); filter: blur(18px); transform: rotate(-9deg); animation: ambient-flow 18s cubic-bezier(.45,.05,.55,.95) infinite alternate; }
+  .home-ambient::after { content: ""; position: absolute; inset: 0; opacity: .58; background-image: radial-gradient(circle, rgba(25, 112, 108, .45) 0 1px, transparent 1.55px), radial-gradient(circle, rgba(176, 129, 35, .34) 0 1px, transparent 1.55px), radial-gradient(circle, rgba(22, 63, 91, .28) 0 1px, transparent 1.45px); background-position: 4% 12%, 68% 24%, 28% 80%; background-size: 170px 170px, 230px 230px, 290px 290px; mask-image: linear-gradient(to bottom, transparent, black 16%, black 86%, transparent); animation: particle-drift 22s linear infinite; }
+  .home-orbit { position: absolute; display: block; border: 1px solid rgba(40, 130, 124, .18); border-radius: 999px; filter: drop-shadow(0 0 14px rgba(30, 119, 112, .12)); }
+  .home-orbit-a { top: 9%; right: 9%; width: 22rem; height: 9rem; transform: rotate(-20deg); animation: orbit-float 13s ease-in-out infinite alternate; }
+  .home-orbit-b { bottom: 4%; left: -8%; width: 29rem; height: 11rem; border-color: rgba(190, 137, 48, .17); transform: rotate(18deg); animation: orbit-float 17s ease-in-out infinite alternate-reverse; }
+  .home-orbit-c { top: 48%; left: 43%; width: 14rem; height: 6rem; border-color: rgba(183, 72, 61, .12); transform: rotate(31deg); animation: orbit-float 15s ease-in-out infinite alternate; }
+  .home-stream { position: absolute; display: block; width: min(74vw, 920px); height: 112px; border-radius: 999px; opacity: .42; filter: blur(10px); background: linear-gradient(90deg, transparent 0%, rgba(74, 184, 169, .05) 20%, rgba(74, 184, 169, .34) 50%, rgba(235, 193, 92, .17) 72%, transparent 100%); }
+  .home-stream-a { top: 13%; left: -18%; transform: rotate(-12deg); animation: stream-sweep 16s cubic-bezier(.45,.05,.55,.95) infinite alternate; }
+  .home-stream-b { bottom: 8%; right: -24%; transform: rotate(20deg); opacity: .34; animation: stream-sweep 21s cubic-bezier(.45,.05,.55,.95) infinite alternate-reverse; }
+  .home-stream-c { top: 53%; left: 35%; width: min(46vw, 560px); height: 74px; transform: rotate(36deg); opacity: .26; animation: stream-sweep 19s cubic-bezier(.45,.05,.55,.95) infinite alternate; }
   .hero-visual::after { content: ""; position: absolute; inset: 0; background: linear-gradient(116deg, rgba(255,255,255,.34), transparent 37%, rgba(29,131,117,.12)); pointer-events: none; }
   .task-visual { background: linear-gradient(135deg, #dfece7, #edf3f0); }
   .task-visual-mail { background: linear-gradient(135deg, #f3ecdb, #f8f4e9); }
@@ -101,6 +112,10 @@
 
 @keyframes card-in { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes alert-pulse { 0%, 100% { opacity: .15; } 50% { opacity: .8; } }
+@keyframes ambient-flow { from { transform: translate3d(-3%, -2%, 0) rotate(-9deg) scale(1); } to { transform: translate3d(4%, 3%, 0) rotate(-4deg) scale(1.08); } }
+@keyframes particle-drift { from { background-position: 4% 12%, 68% 24%, 28% 80%; } to { background-position: 18% 23%, 52% 36%, 44% 62%; } }
+@keyframes orbit-float { from { translate: 0 0; opacity: .36; } to { translate: 18px -13px; opacity: .74; } }
+@keyframes stream-sweep { from { translate: -3vw 0; scale: .9 1; } to { translate: 8vw -2vh; scale: 1.12 1.14; } }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }

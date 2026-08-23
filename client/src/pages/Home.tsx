@@ -237,6 +237,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#f4f5f0] text-[#152c3a]">
       <div className="app-grain pointer-events-none fixed inset-0 z-0" />
+      {view === "home" && <div className="home-ambient" aria-hidden="true"><span className="home-orbit home-orbit-a" /><span className="home-orbit home-orbit-b" /><span className="home-orbit home-orbit-c" /><span className="home-stream home-stream-a" /><span className="home-stream home-stream-b" /><span className="home-stream home-stream-c" /></div>}
       <audio ref={audioRef} preload="auto" />
       <div className="fixed bottom-5 right-5 z-[220] flex flex-col gap-2 sm:bottom-7 sm:right-7">
         <button type="button" onClick={leaveScene} className="grid h-11 w-11 place-items-center rounded-full border border-[#c9d8d4] bg-white/95 text-[#17495b] shadow-[0_12px_28px_rgba(18,63,91,.16)] backdrop-blur transition hover:-translate-y-0.5 hover:border-[#6a9b91] hover:bg-[#eff8f5] active:scale-[.96]" aria-label="返回主页面" title="返回主页面"><House className="h-4.5 w-4.5" /></button>
