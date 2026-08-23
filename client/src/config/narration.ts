@@ -8,18 +8,14 @@
  *
  * audioSrc 为空字符串时，该步骤会自动使用 backupText 的浏览器语音。
  * 音频仅服务于网页内预置培训内容，不应与本地文件、程序执行或真实设备控制关联。
+ * download 的索引 0、1、2 分别对应场景进入、资料下载后打开提示、下载后约五秒的可选结束提示。
  * mail 的索引 0、1、2、3 分别对应邮件详情、附件下载、上报处置与复盘；可逐项替换为自有音频。
  */
 const trainingAsset = (fileName: string) => `${import.meta.env.BASE_URL}training-assets/${fileName}`;
 
 export const NARRATION_CONFIG = {
   download: {
-    audioSrc: [
-      "",
-      trainingAsset("open-downloaded-content-guide.wav"),
-      trainingAsset("risk-download-step-3-impact.wav"),
-      trainingAsset("risk-download-step-4-prevention.wav"),
-    ],
+    audioSrc: ["", trainingAsset("open-downloaded-content-guide.wav"), "", ""],
     backupText: [
       "当前页面展示的是软件下载场景。此类页面的风险常见于域名相似拼写、来源不明，或软件名称、发布者与文件信息不一致。若继续使用，可能造成账号凭据、隐私或业务数据暴露。请选择你想要下载的软件。",
       "请在浏览器下载列表中打开已下载的内容。",

@@ -30,7 +30,7 @@ $speaker.Dispose()
 audioSrc: ["", trainingAsset("open-downloaded-content-guide.wav"), "", ""]
 ```
 
-将 `audioSrc[1]` 设为 `""` 时，页面会自动使用 `backupText[1]` 的浏览器语音。最后执行：
+将 `audioSrc[1]` 设为 `""` 时，页面会自动使用 `backupText[1]` 的浏览器语音。索引 `2` 是点击下载约五秒后的可选结束提示；当前默认空白，不会播放内容。需要启用时，将音频地址写入 `audioSrc[2]`，并保留相应的 `backupText[2]` 作为备用文案。最后执行：
 
 ```bash
 pnpm check && GITHUB_PAGES_BASE=/network-security-week/ pnpm run build:pages
