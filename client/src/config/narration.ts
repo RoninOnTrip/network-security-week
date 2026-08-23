@@ -20,7 +20,7 @@ export const NARRATION_CONFIG = {
     backupText: "欢迎来到网络安全体验区，请选择体验场景。",
   },
   download: {
-    audioSrc: ["", trainingAsset("open-downloaded-content-guide.wav"), "", ""],
+    audioSrc: ["", trainingAsset("open-downloaded-content-guide.wav"), trainingAsset("security-warning-mandarin.wav"), ""],
     backupText: [
       "当前页面展示的是软件下载场景。此类页面的风险常见于域名相似拼写、来源不明，或软件名称、发布者与文件信息不一致。若继续使用，可能造成账号凭据、隐私或业务数据暴露。请选择你想要下载的软件。",
       "请在浏览器下载列表中打开已下载的内容。",
