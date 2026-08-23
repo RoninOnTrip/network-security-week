@@ -125,6 +125,7 @@ export default function Home() {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [manualSpeech, setManualSpeech] = useState(false);
   const [sceneResetKey, setSceneResetKey] = useState(0);
+  const [welcomeAudioPending, setWelcomeAudioPending] = useState(false);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const homeWelcomeTimerRef = useRef<number | null>(null);
@@ -155,6 +156,7 @@ export default function Home() {
 
   const playSceneAudio = (key: SceneKey, audioStep = 0) => {
     const audio = audioRef.current;
+    setWelcomeAudioPending(false);
     stopNarration();
     const source = NARRATION_CONFIG[key].audioSrc[audioStep] ?? NARRATION_CONFIG[key].audioSrc[0];
     if (!source) {
@@ -166,17 +168,22 @@ export default function Home() {
     audio.play().catch(() => undefined);
   };
 
-  const playHomeWelcome = () => {
+  const playHomeWelcome = (fromUserAction = false) => {
     stopNarration();
     const source = NARRATION_CONFIG.home.audioSrc;
     if (!source) {
       speak(NARRATION_CONFIG.home.backupText);
+      setWelcomeAudioPending(false);
       return;
     }
     const audio = audioRef.current;
     if (!audio) return;
     audio.src = source;
-    audio.play().catch(() => undefined);
+    void audio.play().then(() => {
+      setWelcomeAudioPending(false);
+    }).catch(() => {
+      if (!fromUserAction) setWelcomeAudioPending(true);
+    });
   };
 
   useEffect(() => {
@@ -205,7 +212,7 @@ export default function Home() {
     if (view !== "home" || !voiceEnabled) return;
     homeWelcomeTimerRef.current = window.setTimeout(() => {
       homeWelcomeTimerRef.current = null;
-      playHomeWelcome();
+      playHomeWelcome(false);
     }, 1200);
     return () => {
       if (homeWelcomeTimerRef.current !== null) {
@@ -216,6 +223,7 @@ export default function Home() {
   }, [view, voiceEnabled]);
 
   const openScene = (key: SceneKey) => {
+    setWelcomeAudioPending(false);
     setStep(0);
     setView(key);
   };
@@ -234,17 +242,25 @@ export default function Home() {
     setManualSpeech(false);
   };
 
+  const toggleVoice = () => {
+    const nextVoiceEnabled = !voiceEnabled;
+    setVoiceEnabled(nextVoiceEnabled);
+    if (nextVoiceEnabled && view === "home") {
+      playHomeWelcome(true);
+    }
+  };
+
   return (
     <main className="min-h-screen bg-[#f4f5f0] text-[#152c3a]">
       <div className="app-grain pointer-events-none fixed inset-0 z-0" />
-      {view === "home" && <div className="home-ambient" aria-hidden="true"><span className="home-orbit home-orbit-a" /><span className="home-orbit home-orbit-b" /><span className="home-orbit home-orbit-c" /><span className="home-stream home-stream-a" /><span className="home-stream home-stream-b" /><span className="home-stream home-stream-c" /></div>}
+      {view === "home" && <div className="home-ambient" aria-hidden="true"><span className="home-grid" /><span className="home-orbit home-orbit-a" /><span className="home-orbit home-orbit-b" /><span className="home-orbit home-orbit-c" /><span className="home-stream home-stream-a" /><span className="home-stream home-stream-b" /><span className="home-stream home-stream-c" /><span className="home-scan home-scan-a" /><span className="home-scan home-scan-b" /><span className="home-node home-node-a" /><span className="home-node home-node-b" /><span className="home-node home-node-c" /></div>}
       <audio ref={audioRef} preload="auto" />
       <div className="fixed bottom-5 right-5 z-[220] flex flex-col gap-2 sm:bottom-7 sm:right-7">
         <button type="button" onClick={leaveScene} className="grid h-11 w-11 place-items-center rounded-full border border-[#c9d8d4] bg-white/95 text-[#17495b] shadow-[0_12px_28px_rgba(18,63,91,.16)] backdrop-blur transition hover:-translate-y-0.5 hover:border-[#6a9b91] hover:bg-[#eff8f5] active:scale-[.96]" aria-label="返回主页面" title="返回主页面"><House className="h-4.5 w-4.5" /></button>
-        <button type="button" onClick={() => setVoiceEnabled(!voiceEnabled)} className={`grid h-11 w-11 place-items-center rounded-full border shadow-[0_12px_28px_rgba(18,63,91,.16)] backdrop-blur transition hover:-translate-y-0.5 active:scale-[.96] ${voiceEnabled ? "border-[#c9d8d4] bg-white/95 text-[#17495b] hover:border-[#6a9b91] hover:bg-[#eff8f5]" : "border-[#ead3d0] bg-[#fff8f6]/95 text-[#a24f48] hover:border-[#d88a83]"}`} aria-label={voiceEnabled ? "关闭音频" : "开启音频"} title={voiceEnabled ? "关闭音频" : "开启音频"}>{voiceEnabled ? <Volume2 className="h-4.5 w-4.5" /> : <VolumeX className="h-4.5 w-4.5" />}</button>
+        <button type="button" onClick={toggleVoice} className={`grid h-11 w-11 place-items-center rounded-full border shadow-[0_12px_28px_rgba(18,63,91,.16)] backdrop-blur transition hover:-translate-y-0.5 active:scale-[.96] ${voiceEnabled ? "border-[#c9d8d4] bg-white/95 text-[#17495b] hover:border-[#6a9b91] hover:bg-[#eff8f5]" : "border-[#ead3d0] bg-[#fff8f6]/95 text-[#a24f48] hover:border-[#d88a83]"}`} aria-label={voiceEnabled ? "关闭音频" : "开启音频"} title={voiceEnabled ? "关闭音频" : "开启音频"}>{voiceEnabled ? <Volume2 className="h-4.5 w-4.5" /> : <VolumeX className="h-4.5 w-4.5" />}</button>
       </div>
       {view === "home" ? (
-        <HomeScreen openScene={openScene} />
+        <HomeScreen openScene={openScene} welcomeAudioPending={welcomeAudioPending} playHomeWelcome={() => playHomeWelcome(true)} />
       ) : view === "download" ? (
         <TrainingSoftwarePortal key={sceneResetKey} onLeave={leaveScene} onStageAudio={(audioStep) => playSceneAudio("download", audioStep)} />
       ) : (
@@ -352,26 +368,26 @@ function LegacyHomeScreen({ openScene }: { openScene: (key: SceneKey) => void })
 }
 
 /** 设计提醒：首页只承担场景入口职责，以暖白基底、沉浸式任务卡与克制动效建立吸引力。 */
-function HomeScreen({ openScene }: { openScene: (key: SceneKey) => void }) {
+function HomeScreen({ openScene, welcomeAudioPending, playHomeWelcome }: { openScene: (key: SceneKey) => void; welcomeAudioPending: boolean; playHomeWelcome: () => void }) {
   const entryMeta: Record<SceneKey, { label: string; status: string; action: string; theme: string; accent: string }> = {
     download: { label: "HIGH-RISK ACTION", status: "场景已就绪", action: "进入演示场景", theme: "from-[#eaf8f5] via-[#f8fcfa] to-[#dff1ec]", accent: "bg-[#1d8375]" },
     mail: { label: "PHISHING MAIL", status: "场景已就绪", action: "进入演示场景", theme: "from-[#fff9ea] via-[#fffdf7] to-[#f8edd1]", accent: "bg-[#c8892c]" },
     ransomware: { label: "RANSOMWARE", status: "场景已就绪", action: "进入演示场景", theme: "from-[#fff3f0] via-[#fffafa] to-[#f3e5e1]", accent: "bg-[#bc5047]" },
   };
 
-  return <HomeEntryGrid openScene={openScene} />;
+  return <HomeEntryGrid openScene={openScene} welcomeAudioPending={welcomeAudioPending} playHomeWelcome={playHomeWelcome} />;
 
   return <div className="relative z-10 mx-auto min-h-screen max-w-[1380px] px-4 py-4 sm:px-6 lg:px-8 lg:py-7"><header className="flex items-center justify-between gap-4 border-b border-[#d8e1dd] pb-4 lg:pb-5"><BrandMark /><div className="flex items-center gap-3"><span className="hidden font-mono text-[10px] tracking-[0.18em] text-[#6f8589] sm:inline">NETWORK SECURITY WEEK · 2026</span><span className="inline-flex items-center gap-2 border border-[#a7d2c6] bg-[#edf8f4] px-2.5 py-1.5 font-mono text-[9px] tracking-[.12em] text-[#1d8375]"><span className="h-1.5 w-1.5 rounded-full bg-[#1d8375]" />训练台在线</span></div></header><main className="relative py-8 sm:py-11 lg:py-14"><div className="pointer-events-none absolute left-[8%] right-[8%] top-[84px] h-px bg-[linear-gradient(90deg,transparent,#9ac7bb_18%,#9ac7bb_82%,transparent)]" /><div className="relative mb-6 flex flex-wrap items-center justify-between gap-3"><div className="inline-flex items-center gap-2 border-y border-[#c8d9d3] py-2 font-mono text-[10px] tracking-[.16em] text-[#55777b]"><span className="h-1.5 w-1.5 rounded-full bg-[#123f5b]" />SCENARIO ACCESS</div><p className="font-sans text-sm text-[#698087]">选择一个场景，开始互动演示。</p></div><div className="relative grid gap-5 lg:grid-cols-3">{sceneCards.map((scene, index) => { const meta = entryMeta[scene.key]; return <article key={scene.key} className={`group relative overflow-hidden border border-[#c6d8d1] bg-gradient-to-br ${meta.theme} p-3 shadow-[0_16px_34px_rgba(18,63,91,.08)] transition duration-300 hover:-translate-y-1.5 hover:shadow-[0_24px_48px_rgba(18,63,91,.17)]`}><div className={`absolute left-0 top-0 h-full w-1 ${meta.accent}`} /><div className="absolute -right-10 -top-10 h-32 w-32 rounded-full border-[18px] border-white/45" /><div className="relative flex items-center justify-between px-2 pb-3 pt-1"><span className="font-mono text-[10px] font-semibold tracking-[.16em] text-[#53767a]">0{index + 1} · {meta.label}</span><span className="rounded-full border border-white/70 bg-white/65 px-2.5 py-1 font-mono text-[9px] text-[#48686e]">{scene.duration}</span></div><SceneCardVisual scene={scene} /><div className="relative px-2 pb-2 pt-5"><div className="flex items-start justify-between gap-3"><div><h1 className="font-serif text-[26px] font-bold tracking-tight text-[#143d50]">{scene.title}</h1><p className="mt-2 font-sans text-sm leading-6 text-[#5b7279]">{scene.description}</p></div><span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${meta.accent}`} /></div><div className="mt-5 flex items-center justify-between border-t border-[#cadbd4]/80 pt-3"><span className="font-mono text-[10px] tracking-[.12em] text-[#6b8587]">{meta.status}</span><span className="font-mono text-[9px] text-[#8a9da0]">SCENE 0{index + 1}</span></div><button onClick={() => openScene(scene.key)} className="mt-4 inline-flex w-full items-center justify-between bg-[#123f5b] px-4 py-3.5 font-sans text-sm font-bold text-white transition hover:bg-[#1b5a76] active:scale-[0.98]">{meta.action}<ArrowRight className="h-4 w-4" /></button></div></article>; })}</div></main><footer className="flex justify-between border-t border-[#d8e1dd] py-5 font-mono text-[10px] tracking-[0.1em] text-[#6f8589]"><span>NETWORK SECURITY WEEK</span><span>SCENE SELECTOR / 2026</span></footer></div>;
 }
 
 /** 设计提醒：主页采用画廊式安全体验入口，留白、图形场景与单一行动按钮优先于状态信息。 */
-function HomeEntryGrid({ openScene }: { openScene: (key: SceneKey) => void }) {
+function HomeEntryGrid({ openScene, welcomeAudioPending, playHomeWelcome }: { openScene: (key: SceneKey) => void; welcomeAudioPending: boolean; playHomeWelcome: () => void }) {
   const theme: Record<SceneKey, { tag: string; frame: string; glow: string; button: string; buttonHover: string }> = {
     download: { tag: "SOURCE CHECK", frame: "border-[#b9dfd4]", glow: "from-[#d6f2eb] via-[#f8fffc] to-[#e6f5f1]", button: "bg-[#0e695f]", buttonHover: "hover:bg-[#0a514a]" },
     mail: { tag: "MESSAGE TRACE", frame: "border-[#ead5a0]", glow: "from-[#fff4d4] via-[#fffcf2] to-[#f7e8c8]", button: "bg-[#9b671f]", buttonHover: "hover:bg-[#764b12]" },
     ransomware: { tag: "RECOVERY PATH", frame: "border-[#e5b9b2]", glow: "from-[#fff0ed] via-[#fffafa] to-[#f4e1de]", button: "bg-[#a94038]", buttonHover: "hover:bg-[#84342e]" },
   };
-  return <div className="relative z-10 mx-auto min-h-screen max-w-[1320px] px-5 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10"><header className="flex items-center justify-between border-b border-[#d8e1dd] pb-5"><BrandMark /><span className="hidden font-mono text-[10px] tracking-[.2em] text-[#718489] sm:block">NETWORK SECURITY WEEK</span></header><main className="py-12 sm:py-16 lg:py-20"><div className="max-w-xl"><p className="font-mono text-[10px] font-semibold tracking-[.22em] text-[#50747a]">SAFETY EXPERIENCE CENTER</p><h1 className="mt-4 font-serif text-[38px] font-bold leading-tight tracking-[-.035em] text-[#123f5b] sm:text-[52px]">选择一个体验场景</h1></div><div className="mt-10 grid gap-5 lg:grid-cols-3">{sceneCards.map((scene) => { const style = theme[scene.key]; return <article key={scene.key} className={`group relative overflow-hidden rounded-[22px] border ${style.frame} bg-gradient-to-br ${style.glow} p-4 shadow-[0_18px_42px_rgba(18,63,91,.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_26px_56px_rgba(18,63,91,.16)] sm:p-5`}><div className="flex items-center justify-between"><span className="font-mono text-[10px] font-semibold tracking-[.16em] text-[#52747a]">{scene.index} · {style.tag}</span><span className="grid h-8 w-8 place-items-center rounded-full border border-white/70 bg-white/65 font-mono text-[10px] text-[#315862]">{scene.index}</span></div><ScenarioHeroVisual scene={scene} /><div className="mt-6"><h2 className="font-serif text-[29px] font-bold tracking-tight text-[#123f5b]">{scene.title}</h2></div><button onClick={() => openScene(scene.key)} className={`mt-6 inline-flex w-full items-center justify-between rounded-xl ${style.button} px-5 py-4 text-sm font-bold text-white transition ${style.buttonHover} active:scale-[.97]`}>进入场景<ArrowRight className="h-4 w-4" /></button></article>; })}</div></main><footer className="border-t border-[#d8e1dd] py-5 font-mono text-[10px] tracking-[.16em] text-[#809197]">NETWORK SECURITY WEEK</footer></div>;
+  return <div className="relative z-10 mx-auto min-h-screen max-w-[1320px] px-5 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10"><header className="flex items-center justify-between border-b border-[#d8e1dd] pb-5"><BrandMark /><span className="hidden font-mono text-[10px] tracking-[.2em] text-[#718489] sm:block">NETWORK SECURITY WEEK</span></header><main className="py-12 sm:py-16 lg:py-20"><div className="max-w-xl"><p className="font-mono text-[10px] font-semibold tracking-[.22em] text-[#50747a]">SAFETY EXPERIENCE CENTER</p><div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-3"><h1 className="font-serif text-[38px] font-bold leading-tight tracking-[-.035em] text-[#123f5b] sm:text-[52px]">选择一个体验场景</h1>{welcomeAudioPending && <button type="button" onClick={playHomeWelcome} className="inline-flex items-center gap-2 rounded-full border border-[#9bcfc2] bg-[#effaf6]/85 px-3 py-2 font-mono text-[10px] font-semibold tracking-[.08em] text-[#176b60] shadow-[0_8px_20px_rgba(22,112,104,.10)] transition hover:-translate-y-0.5 hover:bg-[#ddf4ec] active:scale-[.97]" aria-label="开启欢迎语音"><Headphones className="h-3.5 w-3.5" />开启欢迎语音</button>}</div></div><div className="mt-10 grid gap-5 lg:grid-cols-3">{sceneCards.map((scene) => { const style = theme[scene.key]; return <article key={scene.key} className={`group relative overflow-hidden rounded-[22px] border ${style.frame} bg-gradient-to-br ${style.glow} p-4 shadow-[0_18px_42px_rgba(18,63,91,.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_26px_56px_rgba(18,63,91,.16)] sm:p-5`}><div className="flex items-center justify-between"><span className="font-mono text-[10px] font-semibold tracking-[.16em] text-[#52747a]">{scene.index} · {style.tag}</span><span className="grid h-8 w-8 place-items-center rounded-full border border-white/70 bg-white/65 font-mono text-[10px] text-[#315862]">{scene.index}</span></div><ScenarioHeroVisual scene={scene} /><div className="mt-6"><h2 className="font-serif text-[29px] font-bold tracking-tight text-[#123f5b]">{scene.title}</h2></div><button onClick={() => openScene(scene.key)} className={`mt-6 inline-flex w-full items-center justify-between rounded-xl ${style.button} px-5 py-4 text-sm font-bold text-white transition ${style.buttonHover} active:scale-[.97]`}>进入场景<ArrowRight className="h-4 w-4" /></button></article>; })}</div></main><footer className="border-t border-[#d8e1dd] py-5 font-mono text-[10px] tracking-[.16em] text-[#809197]">NETWORK SECURITY WEEK</footer></div>;
 }
 
 function ScenarioHeroVisual({ scene }: { scene: (typeof sceneCards)[number] }) {

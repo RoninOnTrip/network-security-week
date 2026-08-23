@@ -86,7 +86,7 @@
 
 @layer components {
   .app-grain { opacity: .26; background-image: radial-gradient(rgba(22,70,82,.16) .55px, transparent .55px); background-size: 5px 5px; mix-blend-mode: multiply; }
-  .home-ambient { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; background: radial-gradient(circle at 8% 12%, rgba(91, 207, 190, .22), transparent 27%), radial-gradient(circle at 89% 22%, rgba(226, 187, 94, .18), transparent 25%), radial-gradient(circle at 69% 88%, rgba(207, 91, 78, .13), transparent 28%); }
+  .home-ambient { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; background: radial-gradient(circle at 8% 12%, rgba(91, 207, 190, .27), transparent 27%), radial-gradient(circle at 89% 22%, rgba(226, 187, 94, .20), transparent 25%), radial-gradient(circle at 69% 88%, rgba(207, 91, 78, .15), transparent 28%), linear-gradient(135deg, rgba(228,246,241,.68), rgba(248,245,233,.2) 44%, rgba(235,242,240,.55)); }
   .home-ambient::before { content: ""; position: absolute; inset: -24%; opacity: .72; background: linear-gradient(118deg, transparent 21%, rgba(67, 153, 145, .12) 41%, transparent 49%, rgba(226, 188, 107, .12) 66%, transparent 75%); filter: blur(18px); transform: rotate(-9deg); animation: ambient-flow 18s cubic-bezier(.45,.05,.55,.95) infinite alternate; }
   .home-ambient::after { content: ""; position: absolute; inset: 0; opacity: .58; background-image: radial-gradient(circle, rgba(25, 112, 108, .45) 0 1px, transparent 1.55px), radial-gradient(circle, rgba(176, 129, 35, .34) 0 1px, transparent 1.55px), radial-gradient(circle, rgba(22, 63, 91, .28) 0 1px, transparent 1.45px); background-position: 4% 12%, 68% 24%, 28% 80%; background-size: 170px 170px, 230px 230px, 290px 290px; mask-image: linear-gradient(to bottom, transparent, black 16%, black 86%, transparent); animation: particle-drift 22s linear infinite; }
   .home-orbit { position: absolute; display: block; border: 1px solid rgba(40, 130, 124, .18); border-radius: 999px; filter: drop-shadow(0 0 14px rgba(30, 119, 112, .12)); }
@@ -97,6 +97,14 @@
   .home-stream-a { top: 13%; left: -18%; transform: rotate(-12deg); animation: stream-sweep 16s cubic-bezier(.45,.05,.55,.95) infinite alternate; }
   .home-stream-b { bottom: 8%; right: -24%; transform: rotate(20deg); opacity: .34; animation: stream-sweep 21s cubic-bezier(.45,.05,.55,.95) infinite alternate-reverse; }
   .home-stream-c { top: 53%; left: 35%; width: min(46vw, 560px); height: 74px; transform: rotate(36deg); opacity: .26; animation: stream-sweep 19s cubic-bezier(.45,.05,.55,.95) infinite alternate; }
+  .home-grid { position: absolute; inset: -18%; display: block; opacity: .30; background-image: linear-gradient(rgba(22,95,106,.16) 1px, transparent 1px), linear-gradient(90deg, rgba(22,95,106,.16) 1px, transparent 1px), linear-gradient(rgba(181,131,47,.09) 1px, transparent 1px), linear-gradient(90deg, rgba(181,131,47,.09) 1px, transparent 1px); background-position: 0 0, 0 0, 0 0, 0 0; background-size: 56px 56px, 56px 56px, 14px 14px, 14px 14px; mask-image: radial-gradient(ellipse at 50% 48%, black 12%, transparent 70%); transform: perspective(900px) rotateX(58deg) translateY(-7%); transform-origin: center; animation: grid-drift 26s linear infinite; }
+  .home-scan { position: absolute; display: block; height: 2px; width: min(54vw, 740px); opacity: .62; background: linear-gradient(90deg, transparent, rgba(38,161,145,.08) 12%, rgba(41,158,150,.9) 50%, rgba(218,175,76,.34) 74%, transparent); box-shadow: 0 0 13px rgba(27,145,135,.36), 0 0 36px rgba(27,145,135,.18); }
+  .home-scan-a { top: 24%; left: -22%; transform: rotate(-11deg); animation: scan-advance 10s cubic-bezier(.45,.05,.55,.95) infinite; }
+  .home-scan-b { right: -23%; bottom: 24%; width: min(47vw, 630px); opacity: .38; transform: rotate(17deg); animation: scan-advance 13s cubic-bezier(.45,.05,.55,.95) infinite reverse; }
+  .home-node { position: absolute; display: block; width: 9px; height: 9px; border-radius: 999px; background: #2c9f90; box-shadow: 0 0 0 6px rgba(44,159,144,.08), 0 0 17px rgba(44,159,144,.68); animation: node-pulse 2.8s ease-in-out infinite; }
+  .home-node-a { top: 18%; left: 16%; }
+  .home-node-b { top: 42%; right: 17%; background: #c48a32; box-shadow: 0 0 0 6px rgba(196,138,50,.08), 0 0 17px rgba(196,138,50,.54); animation-delay: .8s; }
+  .home-node-c { bottom: 18%; left: 41%; background: #c75e54; box-shadow: 0 0 0 6px rgba(199,94,84,.08), 0 0 17px rgba(199,94,84,.48); animation-delay: 1.6s; }
   .hero-visual::after { content: ""; position: absolute; inset: 0; background: linear-gradient(116deg, rgba(255,255,255,.34), transparent 37%, rgba(29,131,117,.12)); pointer-events: none; }
   .task-visual { background: linear-gradient(135deg, #dfece7, #edf3f0); }
   .task-visual-mail { background: linear-gradient(135deg, #f3ecdb, #f8f4e9); }
@@ -115,7 +123,10 @@
 @keyframes ambient-flow { from { transform: translate3d(-3%, -2%, 0) rotate(-9deg) scale(1); } to { transform: translate3d(4%, 3%, 0) rotate(-4deg) scale(1.08); } }
 @keyframes particle-drift { from { background-position: 4% 12%, 68% 24%, 28% 80%; } to { background-position: 18% 23%, 52% 36%, 44% 62%; } }
 @keyframes orbit-float { from { translate: 0 0; opacity: .36; } to { translate: 18px -13px; opacity: .74; } }
-@keyframes stream-sweep { from { translate: -3vw 0; scale: .9 1; } to { translate: 8vw -2vh; scale: 1.12 1.14; } }
+  @keyframes stream-sweep { from { translate: -3vw 0; scale: .9 1; } to { translate: 8vw -2vh; scale: 1.12 1.14; } }
+  @keyframes grid-drift { from { background-position: 0 0, 0 0, 0 0, 0 0; } to { background-position: 112px 56px, 112px 56px, 28px 14px, 28px 14px; } }
+  @keyframes scan-advance { from { translate: -7vw -2vh; opacity: .04; } 30%, 70% { opacity: .68; } to { translate: 22vw 6vh; opacity: .04; } }
+  @keyframes node-pulse { 0%, 100% { scale: .8; opacity: .4; } 50% { scale: 1.22; opacity: .95; } }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
