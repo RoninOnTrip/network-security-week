@@ -11,6 +11,7 @@
  * home 用于主页的定时欢迎提示，可替换 audioSrc 并保留 backupText 作为备用。
  * download 的索引 0、1、2 分别对应场景进入、资料下载后打开提示、下载后约五秒的可选结束提示。
  * mail 的索引 0 对应邮件详情的入场讲解；可替换为自有音频。
+ * ransomware 的索引 0、1 分别对应路径动画讲解与“开始”按钮出现时的提示。
  */
 const trainingAsset = (fileName: string) => `${import.meta.env.BASE_URL}training-assets/${fileName}`;
 
@@ -39,16 +40,12 @@ export const NARRATION_CONFIG = {
   },
   ransomware: {
     audioSrc: [
-      trainingAsset("ransomware-narration-entry-unified.wav"),
-      trainingAsset("ransomware-narration-document-unified.wav"),
-      trainingAsset("ransomware-narration-locked-unified.wav"),
-      trainingAsset("ransomware-narration-response-unified.wav"),
+      trainingAsset("ransomware-narration-animation-entry.wav"),
+      trainingAsset("ransomware-narration-start-prompt.wav"),
     ],
     backupText: [
-      "当前为浏览器内的虚拟业务桌面。勒索软件常通过伪装文档、钓鱼邮件附件、远程服务弱口令或未修补漏洞进入终端。请先打开任意文档查看正常业务资料。",
-      "文档当前可以正常浏览。请留意名称相近的供应商补充资料；真实攻击中，伪装文件常利用业务往来的信任关系诱导打开。",
-      "当伪装文档被打开后，虚拟桌面中的文件会被锁定。真实事件可能导致业务中断、数据不可用和恢复成本上升。",
-      "不要反复尝试打开文件或进行处置操作。应优先断开网络、报告安全团队、保留现场，并依预案从离线备份恢复；同时做好补丁更新、最小权限和定期演练。",
+      "勒索软件常借助伪造业务邮件、相似文件名称或来源不明的资料进入用户电脑。攻击者会利用看似正常的工作往来诱导打开内容，进而造成业务数据无法正常使用、工作中断和恢复成本上升。请注意核对来源、文件信息和业务确认路径。",
+      "下面进入勒索病毒演示环节，请点击按钮。",
     ],
   },
 } as const;

@@ -4,14 +4,14 @@ import {
 } from "@/config/sharedDownloadAsset";
 
 /**
- * 勒索虚拟桌面的可替换资料映射。
+ * 勒索场景的网页内资料文件夹配置。
  *
  * 维护方式：
  * 1. 将 TXT、MD、CSV、PDF 或图片资料上传到静态存储；
  * 2. 在 RANSOMWARE_DESKTOP_DOCUMENTS 中更新 displayName、assetUrl、previewTitle 与 previewLines；
- * 3. 仅允许下方白名单中的非可执行扩展名。任何 .exe、脚本、安装包或压缩包都会被过滤，无法显示或打开。
+ * 3. 仅允许下方共享白名单中的非可执行扩展名。任何 .exe、脚本、安装包或压缩包都会被过滤。
  *
- * 所有资料仅用于浏览器内预览，不会被执行、加密或写入本机。
+ * 所有资料仅用于浏览器内预览；打开任意资料后，页面会在约三秒后返回体验中心，不会执行、加密、写入或读取本机文件。
  */
 export const ALLOWED_RANSOMWARE_DESKTOP_FILE_EXTENSIONS = ALLOWED_SHARED_DOWNLOAD_FILE_EXTENSIONS;
 
@@ -21,7 +21,6 @@ type SafeDesktopDocument = {
   label: string;
   previewTitle: string;
   previewLines: string[];
-  trigger?: boolean;
   assetUrl?: string;
 };
 
@@ -46,7 +45,6 @@ const configuredDocuments: SafeDesktopDocument[] = [
     label: "PDF",
     previewTitle: "供应商资料补充",
     previewLines: ["附件说明：补充材料已整理", "请在阅读后按流程提交确认", "文件来源：外部业务往来"],
-    trigger: true,
   },
   {
     id: "meeting-note",
@@ -69,6 +67,5 @@ export const RANSOMWARE_DESKTOP_DOCUMENTS = configuredDocuments
     label: document.label,
     previewTitle: document.previewTitle,
     previewLines: document.previewLines,
-    trigger: Boolean(document.trigger),
     assetUrl: document.assetUrl,
   }));
