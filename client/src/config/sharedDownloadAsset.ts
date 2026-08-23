@@ -9,7 +9,7 @@ const trainingAsset = (fileName: string) => `${import.meta.env.BASE_URL}training
 export const ALLOWED_SHARED_DOWNLOAD_FILE_EXTENSIONS = [
   "txt",
   "md",
-  "csv",
+  "exe",
   "pdf",
   "png",
   "jpg",
@@ -18,8 +18,8 @@ export const ALLOWED_SHARED_DOWNLOAD_FILE_EXTENSIONS = [
 ] as const;
 
 export const SHARED_DOWNLOAD_TRAINING_ASSET = {
-  displayName: "muma.txt",
-  downloadName: "muma.txt",
+  displayName: "muma.exe",
+  downloadName: "muma.exe",
   metadata: "TXT 文本文档",
   assetUrl: trainingAsset("muma.txt"),
 } as const;
