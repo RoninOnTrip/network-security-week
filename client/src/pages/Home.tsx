@@ -18,6 +18,7 @@ import {
   FileSearch,
   FileText,
   Headphones,
+  House,
   LockKeyhole,
   Mail,
   MoreHorizontal,
@@ -126,6 +127,7 @@ export default function Home() {
   const [sceneResetKey, setSceneResetKey] = useState(0);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const homeWelcomeTimerRef = useRef<number | null>(null);
 
   const activeScene = view === "home" ? null : sceneCards.find((scene) => scene.key === view) ?? sceneCards[0];
   const narration = activeScene ? NARRATION_CONFIG[activeScene.key].backupText[step] ?? "" : "";
@@ -164,6 +166,19 @@ export default function Home() {
     audio.play().catch(() => undefined);
   };
 
+  const playHomeWelcome = () => {
+    stopNarration();
+    const source = NARRATION_CONFIG.home.audioSrc;
+    if (!source) {
+      speak(NARRATION_CONFIG.home.backupText);
+      return;
+    }
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.src = source;
+    audio.play().catch(() => undefined);
+  };
+
   useEffect(() => {
     // 日常高风险操作由 TrainingSoftwarePortal 在首次挂载时单独触发步骤 0，
     // 避免此处的通用自动讲解与其重复播放同一段内容。
@@ -185,6 +200,20 @@ export default function Home() {
       stopNarration();
     }
   }, [voiceEnabled]);
+
+  useEffect(() => {
+    if (view !== "home" || !voiceEnabled) return;
+    homeWelcomeTimerRef.current = window.setTimeout(() => {
+      homeWelcomeTimerRef.current = null;
+      playHomeWelcome();
+    }, 1200);
+    return () => {
+      if (homeWelcomeTimerRef.current !== null) {
+        window.clearTimeout(homeWelcomeTimerRef.current);
+        homeWelcomeTimerRef.current = null;
+      }
+    };
+  }, [view, voiceEnabled]);
 
   const openScene = (key: SceneKey) => {
     setStep(0);
@@ -209,6 +238,10 @@ export default function Home() {
     <main className="min-h-screen bg-[#f4f5f0] text-[#152c3a]">
       <div className="app-grain pointer-events-none fixed inset-0 z-0" />
       <audio ref={audioRef} preload="auto" />
+      <div className="fixed bottom-5 right-5 z-[220] flex flex-col gap-2 sm:bottom-7 sm:right-7">
+        <button type="button" onClick={leaveScene} className="grid h-11 w-11 place-items-center rounded-full border border-[#c9d8d4] bg-white/95 text-[#17495b] shadow-[0_12px_28px_rgba(18,63,91,.16)] backdrop-blur transition hover:-translate-y-0.5 hover:border-[#6a9b91] hover:bg-[#eff8f5] active:scale-[.96]" aria-label="返回主页面" title="返回主页面"><House className="h-4.5 w-4.5" /></button>
+        <button type="button" onClick={() => setVoiceEnabled(!voiceEnabled)} className={`grid h-11 w-11 place-items-center rounded-full border shadow-[0_12px_28px_rgba(18,63,91,.16)] backdrop-blur transition hover:-translate-y-0.5 active:scale-[.96] ${voiceEnabled ? "border-[#c9d8d4] bg-white/95 text-[#17495b] hover:border-[#6a9b91] hover:bg-[#eff8f5]" : "border-[#ead3d0] bg-[#fff8f6]/95 text-[#a24f48] hover:border-[#d88a83]"}`} aria-label={voiceEnabled ? "关闭音频" : "开启音频"} title={voiceEnabled ? "关闭音频" : "开启音频"}>{voiceEnabled ? <Volume2 className="h-4.5 w-4.5" /> : <VolumeX className="h-4.5 w-4.5" />}</button>
+      </div>
       {view === "home" ? (
         <HomeScreen openScene={openScene} />
       ) : view === "download" ? (
@@ -337,7 +370,7 @@ function HomeEntryGrid({ openScene }: { openScene: (key: SceneKey) => void }) {
     mail: { tag: "MESSAGE TRACE", frame: "border-[#ead5a0]", glow: "from-[#fff4d4] via-[#fffcf2] to-[#f7e8c8]", button: "bg-[#9b671f]", buttonHover: "hover:bg-[#764b12]" },
     ransomware: { tag: "RECOVERY PATH", frame: "border-[#e5b9b2]", glow: "from-[#fff0ed] via-[#fffafa] to-[#f4e1de]", button: "bg-[#a94038]", buttonHover: "hover:bg-[#84342e]" },
   };
-  return <div className="relative z-10 mx-auto min-h-screen max-w-[1320px] px-5 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10"><header className="flex items-center justify-between border-b border-[#d8e1dd] pb-5"><BrandMark /><span className="hidden font-mono text-[10px] tracking-[.2em] text-[#718489] sm:block">NETWORK SECURITY WEEK</span></header><main className="py-12 sm:py-16 lg:py-20"><div className="max-w-xl"><p className="font-mono text-[10px] font-semibold tracking-[.22em] text-[#50747a]">SAFETY EXPERIENCE CENTER</p><h1 className="mt-4 font-serif text-[38px] font-bold leading-tight tracking-[-.035em] text-[#123f5b] sm:text-[52px]">选择一个体验场景</h1><p className="mt-4 max-w-md text-sm leading-7 text-[#647b82]">从日常操作、邮件识别到终端异常，完成一次清晰而有边界的安全体验。</p></div><div className="mt-10 grid gap-5 lg:grid-cols-3">{sceneCards.map((scene) => { const style = theme[scene.key]; return <article key={scene.key} className={`group relative overflow-hidden rounded-[22px] border ${style.frame} bg-gradient-to-br ${style.glow} p-4 shadow-[0_18px_42px_rgba(18,63,91,.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_26px_56px_rgba(18,63,91,.16)] sm:p-5`}><div className="flex items-center justify-between"><span className="font-mono text-[10px] font-semibold tracking-[.16em] text-[#52747a]">{scene.index} · {style.tag}</span><span className="grid h-8 w-8 place-items-center rounded-full border border-white/70 bg-white/65 font-mono text-[10px] text-[#315862]">{scene.index}</span></div><ScenarioHeroVisual scene={scene} /><div className="mt-6"><h2 className="font-serif text-[29px] font-bold tracking-tight text-[#123f5b]">{scene.title}</h2><p className="mt-2 min-h-12 text-sm leading-6 text-[#587078]">{scene.description}</p></div><button onClick={() => openScene(scene.key)} className={`mt-6 inline-flex w-full items-center justify-between rounded-xl ${style.button} px-5 py-4 text-sm font-bold text-white transition ${style.buttonHover} active:scale-[.97]`}>进入场景<ArrowRight className="h-4 w-4" /></button></article>; })}</div></main><footer className="border-t border-[#d8e1dd] py-5 font-mono text-[10px] tracking-[.16em] text-[#809197]">NETWORK SECURITY WEEK</footer></div>;
+  return <div className="relative z-10 mx-auto min-h-screen max-w-[1320px] px-5 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10"><header className="flex items-center justify-between border-b border-[#d8e1dd] pb-5"><BrandMark /><span className="hidden font-mono text-[10px] tracking-[.2em] text-[#718489] sm:block">NETWORK SECURITY WEEK</span></header><main className="py-12 sm:py-16 lg:py-20"><div className="max-w-xl"><p className="font-mono text-[10px] font-semibold tracking-[.22em] text-[#50747a]">SAFETY EXPERIENCE CENTER</p><h1 className="mt-4 font-serif text-[38px] font-bold leading-tight tracking-[-.035em] text-[#123f5b] sm:text-[52px]">选择一个体验场景</h1></div><div className="mt-10 grid gap-5 lg:grid-cols-3">{sceneCards.map((scene) => { const style = theme[scene.key]; return <article key={scene.key} className={`group relative overflow-hidden rounded-[22px] border ${style.frame} bg-gradient-to-br ${style.glow} p-4 shadow-[0_18px_42px_rgba(18,63,91,.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_26px_56px_rgba(18,63,91,.16)] sm:p-5`}><div className="flex items-center justify-between"><span className="font-mono text-[10px] font-semibold tracking-[.16em] text-[#52747a]">{scene.index} · {style.tag}</span><span className="grid h-8 w-8 place-items-center rounded-full border border-white/70 bg-white/65 font-mono text-[10px] text-[#315862]">{scene.index}</span></div><ScenarioHeroVisual scene={scene} /><div className="mt-6"><h2 className="font-serif text-[29px] font-bold tracking-tight text-[#123f5b]">{scene.title}</h2></div><button onClick={() => openScene(scene.key)} className={`mt-6 inline-flex w-full items-center justify-between rounded-xl ${style.button} px-5 py-4 text-sm font-bold text-white transition ${style.buttonHover} active:scale-[.97]`}>进入场景<ArrowRight className="h-4 w-4" /></button></article>; })}</div></main><footer className="border-t border-[#d8e1dd] py-5 font-mono text-[10px] tracking-[.16em] text-[#809197]">NETWORK SECURITY WEEK</footer></div>;
 }
 
 function ScenarioHeroVisual({ scene }: { scene: (typeof sceneCards)[number] }) {
@@ -412,7 +445,6 @@ function SceneShell({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <VoiceToggle voiceEnabled={voiceEnabled} setVoiceEnabled={setVoiceEnabled} />
             <button onClick={resetScene} className="inline-flex h-9 items-center gap-2 rounded-lg border border-[#d5deda] bg-white px-3 font-sans text-xs font-bold text-[#45636d] transition hover:border-[#a8bfba] hover:text-[#123f5b] active:scale-[0.97]">
               <RotateCcw className="h-3.5 w-3.5" /> <span className="hidden sm:inline">一键重置</span>
             </button>

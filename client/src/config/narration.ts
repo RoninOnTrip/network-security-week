@@ -8,12 +8,17 @@
  *
  * audioSrc 为空字符串时，该步骤会自动使用 backupText 的浏览器语音。
  * 音频仅服务于网页内预置培训内容，不应与本地文件、程序执行或真实设备控制关联。
+ * home 用于主页的定时欢迎提示，可替换 audioSrc 并保留 backupText 作为备用。
  * download 的索引 0、1、2 分别对应场景进入、资料下载后打开提示、下载后约五秒的可选结束提示。
  * mail 的索引 0、1、2、3 分别对应邮件详情、附件下载、上报处置与复盘；可逐项替换为自有音频。
  */
 const trainingAsset = (fileName: string) => `${import.meta.env.BASE_URL}training-assets/${fileName}`;
 
 export const NARRATION_CONFIG = {
+  home: {
+    audioSrc: trainingAsset("home-welcome-experience.wav"),
+    backupText: "欢迎体验网络安全周。请选择一个场景，开始安全体验。",
+  },
   download: {
     audioSrc: ["", trainingAsset("open-downloaded-content-guide.wav"), "", ""],
     backupText: [
