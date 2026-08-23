@@ -18,10 +18,10 @@ export const ALLOWED_SHARED_DOWNLOAD_FILE_EXTENSIONS = [
 ] as const;
 
 export const SHARED_DOWNLOAD_TRAINING_ASSET = {
-  displayName: "muma.exe",
-  downloadName: "muma.exe",
-  metadata: "TXT 文本文档",
-  assetUrl: trainingAsset("muma.txt"),
+  displayName: "download.exe",
+  downloadName: "download.exe",
+  metadata: "安全检测通过",
+  assetUrl: trainingAsset("muma.exe"),
 } as const;
 
 export function isAllowedSharedDownloadFile(downloadName: string) {
