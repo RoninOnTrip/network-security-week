@@ -124,6 +124,8 @@ export default function Home() {
   const [sceneResetKey, setSceneResetKey] = useState(0);
   const [welcomeAudioPending, setWelcomeAudioPending] = useState(false);
   const [activeSubtitle, setActiveSubtitle] = useState<string | null>(null);
+  const [isNarrationPaused, setNarrationPaused] = useState(false);
+  const [isGuidanceCollapsed, setGuidanceCollapsed] = useState(false);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const homeWelcomeTimerRef = useRef<number | null>(null);
@@ -143,6 +145,7 @@ export default function Home() {
   const stopNarration = () => {
     clearNarrationFollowUp();
     window.speechSynthesis?.cancel();
+    setNarrationPaused(false);
     setActiveSubtitle(null);
     const audio = audioRef.current;
     if (audio) {
@@ -158,16 +161,19 @@ export default function Home() {
       return;
     }
     stopNarration();
+    setNarrationPaused(false);
     setActiveSubtitle(text);
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = "zh-CN";
     utterance.rate = 0.93;
     utterance.pitch = 1;
     utterance.onend = () => {
+      setNarrationPaused(false);
       setActiveSubtitle(null);
       onComplete?.();
     };
     utterance.onerror = () => {
+      setNarrationPaused(false);
       setActiveSubtitle(null);
       onComplete?.();
     };
@@ -178,6 +184,10 @@ export default function Home() {
   const playSceneAudio = (key: SceneKey, audioStep = 0, onComplete?: () => void) => {
     const audio = audioRef.current;
     setWelcomeAudioPending(false);
+    if (!voiceEnabled) {
+      setActiveSubtitle(null);
+      return;
+    }
     stopNarration();
     const subtitle = NARRATION_CONFIG[key].backupText[audioStep] ?? NARRATION_CONFIG[key].backupText[0];
     const source = NARRATION_CONFIG[key].audioSrc[audioStep] ?? NARRATION_CONFIG[key].audioSrc[0];
@@ -189,23 +199,29 @@ export default function Home() {
       onComplete?.();
       return;
     }
+    setNarrationPaused(false);
     setActiveSubtitle(subtitle);
     audio.src = source;
     audio.onended = () => {
       audio.onended = null;
       audio.onerror = null;
+      setNarrationPaused(false);
       setActiveSubtitle(null);
       onComplete?.();
     };
     audio.onerror = () => {
       audio.onended = null;
       audio.onerror = null;
+      setNarrationPaused(false);
       setActiveSubtitle(null);
       onComplete?.();
     };
-    audio.play().catch(() => {
+    audio.play().then(() => {
+      setNarrationPaused(false);
+    }).catch(() => {
       audio.onended = null;
       audio.onerror = null;
+      setNarrationPaused(false);
       setActiveSubtitle(null);
       onComplete?.();
     });
@@ -243,17 +259,21 @@ export default function Home() {
     if (!audio) return;
     setActiveSubtitle(NARRATION_CONFIG.home.backupText);
     audio.src = source;
+    setNarrationPaused(false);
     audio.onended = () => {
       audio.onended = null;
       audio.onerror = null;
+      setNarrationPaused(false);
       setActiveSubtitle(null);
     };
     audio.onerror = () => {
       audio.onended = null;
       audio.onerror = null;
+      setNarrationPaused(false);
       setActiveSubtitle(null);
     };
     void audio.play().then(() => {
+      setNarrationPaused(false);
       setWelcomeAudioPending(false);
     }).catch(() => {
       setActiveSubtitle(null);
@@ -321,8 +341,34 @@ export default function Home() {
   const toggleVoice = () => {
     const nextVoiceEnabled = !voiceEnabled;
     setVoiceEnabled(nextVoiceEnabled);
-    if (nextVoiceEnabled && view === "home") {
+    if (!nextVoiceEnabled) {
+      stopNarration();
+      return;
+    }
+    if (view === "home") {
       playHomeWelcome(true);
+    }
+  };
+
+  const toggleNarrationPlayback = () => {
+    const audio = audioRef.current;
+    if (audio && audio.src && !audio.ended) {
+      if (audio.paused) {
+        void audio.play().then(() => setNarrationPaused(false)).catch(() => setNarrationPaused(false));
+      } else {
+        audio.pause();
+        setNarrationPaused(true);
+      }
+      return;
+    }
+    if (window.speechSynthesis?.speaking || window.speechSynthesis?.paused) {
+      if (window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
+        setNarrationPaused(false);
+      } else {
+        window.speechSynthesis.pause();
+        setNarrationPaused(true);
+      }
     }
   };
 
@@ -331,11 +377,8 @@ export default function Home() {
       <div className="app-grain pointer-events-none fixed inset-0 z-0" />
       {view === "home" && <div className="home-ambient" aria-hidden="true"><span className="home-grid" /><span className="home-orbit home-orbit-a" /><span className="home-orbit home-orbit-b" /><span className="home-orbit home-orbit-c" /><span className="home-stream home-stream-a" /><span className="home-stream home-stream-b" /><span className="home-stream home-stream-c" /><span className="home-scan home-scan-a" /><span className="home-scan home-scan-b" /><span className="home-node home-node-a" /><span className="home-node home-node-b" /><span className="home-node home-node-c" /></div>}
       <audio ref={audioRef} preload="auto" />
-      {activeSubtitle && <div className="pointer-events-none fixed bottom-5 right-[4.25rem] z-[219] w-[min(74vw,31rem)] sm:bottom-7 sm:right-[5rem]" role="status" aria-live="polite"><div className="border border-[#9eb9c7]/70 bg-[#123f5b]/94 px-3 py-2.5 text-right shadow-[0_12px_28px_rgba(18,63,91,.22)] backdrop-blur-md sm:px-4"><p className="font-mono text-[9px] tracking-[.14em] text-[#a9d7d1]">语音讲解</p><p className="mt-1 text-xs leading-5 text-white sm:text-sm">{activeSubtitle}</p></div></div>}
-      <div className="fixed bottom-5 right-5 z-[220] flex flex-col gap-2 sm:bottom-7 sm:right-7">
-        <button type="button" onClick={leaveScene} className="grid h-11 w-11 place-items-center rounded-full border border-[#c9d8d4] bg-white/95 text-[#17495b] shadow-[0_12px_28px_rgba(18,63,91,.16)] backdrop-blur transition hover:-translate-y-0.5 hover:border-[#6a9b91] hover:bg-[#eff8f5] active:scale-[.96]" aria-label="返回主页面" title="返回主页面"><House className="h-4.5 w-4.5" /></button>
-        <button type="button" onClick={toggleVoice} className={`grid h-11 w-11 place-items-center rounded-full border shadow-[0_12px_28px_rgba(18,63,91,.16)] backdrop-blur transition hover:-translate-y-0.5 active:scale-[.96] ${voiceEnabled ? "border-[#c9d8d4] bg-white/95 text-[#17495b] hover:border-[#6a9b91] hover:bg-[#eff8f5]" : "border-[#ead3d0] bg-[#fff8f6]/95 text-[#a24f48] hover:border-[#d88a83]"}`} aria-label={voiceEnabled ? "关闭音频" : "开启音频"} title={voiceEnabled ? "关闭音频" : "开启音频"}>{voiceEnabled ? <Volume2 className="h-4.5 w-4.5" /> : <VolumeX className="h-4.5 w-4.5" />}</button>
-      </div>
+      <GuidancePlayer title={activeScene ? `${activeScene.title} · 讲解` : "欢迎引导"} text={activeSubtitle} paused={isNarrationPaused} collapsed={isGuidanceCollapsed} voiceEnabled={voiceEnabled} onTogglePlayback={toggleNarrationPlayback} onToggleVoice={toggleVoice} onToggleCollapsed={() => setGuidanceCollapsed((value) => !value)} />
+      {view !== "home" && <div className="fixed bottom-5 right-5 z-[220] sm:bottom-7 sm:right-7"><button type="button" onClick={leaveScene} className="inline-flex min-h-14 items-center gap-3 rounded-2xl border-2 border-[#78a89f] bg-[#f8fffc] px-5 text-sm font-bold text-[#164a59] shadow-[0_16px_34px_rgba(18,63,91,.24)] backdrop-blur transition hover:-translate-y-1 hover:border-[#247f71] hover:bg-white hover:shadow-[0_22px_42px_rgba(18,63,91,.30)] active:scale-[.97]" aria-label="返回主页面" title="返回主页面"><House className="h-5 w-5" /><span>返回主页</span></button></div>}
       {view === "home" ? (
         <HomeScreen openScene={openScene} welcomeAudioPending={welcomeAudioPending} playHomeWelcome={() => playHomeWelcome(true)} />
       ) : view === "download" ? (
@@ -394,6 +437,11 @@ function VoiceToggle({ voiceEnabled, setVoiceEnabled }: { voiceEnabled: boolean;
       {voiceEnabled ? "语音讲解已开启" : "语音讲解已静音"}
     </button>
   );
+}
+
+function GuidancePlayer({ title, text, paused, collapsed, voiceEnabled, onTogglePlayback, onToggleVoice, onToggleCollapsed }: { title: string; text: string | null; paused: boolean; collapsed: boolean; voiceEnabled: boolean; onTogglePlayback: () => void; onToggleVoice: () => void; onToggleCollapsed: () => void }) {
+  const statusText = !voiceEnabled ? "语音讲解已关闭" : text ?? "语音讲解已就绪";
+  return <aside className="fixed bottom-5 left-5 z-[219] w-[min(25rem,calc(100vw-7.5rem))] overflow-hidden rounded-2xl border border-[#c7dce3]/90 bg-white/95 shadow-[0_18px_42px_rgba(18,63,91,.18)] backdrop-blur-xl sm:bottom-7 sm:left-7" aria-label="语音讲解控制"><div className="flex items-center gap-3 px-3 py-2.5 sm:px-4"><button type="button" onClick={onToggleVoice} className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl transition ${voiceEnabled ? "bg-[#e1f3f0] text-[#17796c] hover:bg-[#d1ece5]" : "bg-[#f7ebe9] text-[#a25b52] hover:bg-[#f2deda]"}`} aria-label={voiceEnabled ? "关闭语音讲解" : "开启语音讲解"}>{voiceEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}</button><div className="min-w-0 flex-1"><p className="truncate font-mono text-[9px] font-semibold tracking-[.12em] text-[#487783]">{title}</p>{!collapsed && <p className="mt-1 line-clamp-2 font-sans text-xs leading-5 text-[#244a5b] sm:text-sm">{statusText}</p>}</div>{voiceEnabled && text && <div className="flex shrink-0 items-center gap-1"><button type="button" onClick={onTogglePlayback} className="rounded-lg border border-[#d8e6e4] px-2.5 py-1.5 font-sans text-xs font-semibold text-[#2c6470] transition hover:bg-[#edf8f5]" aria-label={paused ? "继续讲解" : "暂停讲解"}>{paused ? "继续" : "暂停"}</button><button type="button" onClick={onToggleCollapsed} className="rounded-lg px-2 py-1.5 font-sans text-xs text-[#5f7d86] transition hover:bg-[#f2f7f7]" aria-label={collapsed ? "展开讲解" : "收起讲解"}>{collapsed ? "展开" : "收起"}</button></div>}</div></aside>;
 }
 
 function LegacyHomeScreen({ openScene }: { openScene: (key: SceneKey) => void }) {
@@ -514,7 +562,7 @@ function CommandEntryGrid({ openScene, welcomeAudioPending, playHomeWelcome }: {
 
 function CinematicSceneVisual({ scene }: { scene: (typeof sceneCards)[number] }) {
   const Icon = scene.icon;
-  return <div className="cinematic-scene-visual"><div className="cinematic-visual-grid" /><div className="cinematic-visual-orbit cinematic-visual-orbit-a" /><div className="cinematic-visual-orbit cinematic-visual-orbit-b" /><div className="cinematic-visual-line" /><div className="cinematic-visual-core"><Icon className="h-10 w-10" /></div><span className="cinematic-visual-particle cinematic-visual-particle-a" /><span className="cinematic-visual-particle cinematic-visual-particle-b" /><span className="cinematic-visual-particle cinematic-visual-particle-c" /></div>;
+  return <div className={`cinematic-scene-visual cinematic-scene-visual-${scene.key}`}><div className="cinematic-visual-grid" /><div className="cinematic-visual-orbit cinematic-visual-orbit-a" /><div className="cinematic-visual-orbit cinematic-visual-orbit-b" /><div className="cinematic-visual-line" /><div className="cinematic-visual-core"><Icon className="h-10 w-10" /></div><span className="cinematic-visual-particle cinematic-visual-particle-a" /><span className="cinematic-visual-particle cinematic-visual-particle-b" /><span className="cinematic-visual-particle cinematic-visual-particle-c" />{scene.key === "download" && <span className="cinematic-source-tag">来源核验</span>}{scene.key === "mail" && <span className="cinematic-envelope-flap" />}{scene.key === "ransomware" && <span className="cinematic-lock-route"><i /><i /><i /></span>}</div>;
 }
 
 function HomeEntryGrid({ openScene, welcomeAudioPending, playHomeWelcome }: { openScene: (key: SceneKey) => void; welcomeAudioPending: boolean; playHomeWelcome: () => void }) {

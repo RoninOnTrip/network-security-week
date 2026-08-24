@@ -593,3 +593,23 @@
 
 @keyframes cinematic-ripple-expand { 0% { opacity: 0; transform: scale(.55); } 18% { opacity: .58; } 72% { opacity: .08; } 100% { opacity: 0; transform: scale(1.75); } }
 @keyframes cinematic-spark-float { 0%, 100% { opacity: .22; transform: translate3d(0, 0, 0) scale(.8); } 50% { opacity: .9; transform: translate3d(18px, -20px, 0) scale(1.25); } }
+
+/* 首页场景预览：每张卡仅在悬浮时触发一个低幅度的学习语义动效。 */
+.cinematic-source-tag { position: absolute; bottom: .8rem; left: .8rem; border: 1px solid currentColor; background: color-mix(in srgb, currentColor 15%, rgba(7, 31, 47, .88)); padding: .35rem .55rem; color: currentColor; font-family: "IBM Plex Mono", monospace; font-size: .56rem; font-weight: 600; letter-spacing: .12em; transition: transform 420ms cubic-bezier(.22, 1, .36, 1), background 280ms ease; }
+.cinematic-scene-download:hover .cinematic-source-tag { transform: translateX(1.45rem); background: color-mix(in srgb, currentColor 28%, rgba(7, 31, 47, .88)); }
+
+.cinematic-envelope-flap { position: absolute; right: 1.35rem; bottom: 1rem; width: 4.6rem; height: 3rem; border: 1px solid currentColor; background: color-mix(in srgb, currentColor 10%, rgba(6, 27, 43, .78)); box-shadow: 0 10px 20px rgba(0,0,0,.16); }
+.cinematic-envelope-flap::before { content: ""; position: absolute; left: -.06rem; top: -.06rem; width: calc(100% + .12rem); height: 1.55rem; border: 1px solid currentColor; border-bottom: 0; background: color-mix(in srgb, currentColor 20%, rgba(8, 35, 51, .92)); clip-path: polygon(0 0, 100% 0, 50% 100%); transform-origin: top; transition: transform 460ms cubic-bezier(.22, 1, .36, 1); }
+.cinematic-scene-mail:hover .cinematic-envelope-flap::before { transform: rotateX(-132deg); }
+
+.cinematic-lock-route { position: absolute; right: .9rem; bottom: 1rem; display: flex; align-items: center; gap: .36rem; }
+.cinematic-lock-route i { display: block; width: .5rem; height: .5rem; border: 1px solid currentColor; border-radius: 999px; background: color-mix(in srgb, currentColor 18%, transparent); box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 7%, transparent); transition: transform 420ms cubic-bezier(.22, 1, .36, 1), opacity 280ms ease; }
+.cinematic-lock-route i::after { content: ""; display: block; width: 1rem; height: 1px; margin: .17rem 0 0 .48rem; background: currentColor; opacity: .45; }
+.cinematic-lock-route i:last-child::after { display: none; }
+.cinematic-scene-ransomware:hover .cinematic-lock-route i:nth-child(1) { transform: translateX(.35rem); }
+.cinematic-scene-ransomware:hover .cinematic-lock-route i:nth-child(2) { transform: translateX(.6rem); transition-delay: 55ms; }
+.cinematic-scene-ransomware:hover .cinematic-lock-route i:nth-child(3) { transform: translateX(.85rem); transition-delay: 110ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cinematic-source-tag, .cinematic-envelope-flap::before, .cinematic-lock-route i { transition: none !important; transform: none !important; }
+}
