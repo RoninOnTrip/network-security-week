@@ -11,7 +11,7 @@
  * home 用于主页的定时欢迎提示，可替换 audioSrc 并保留 backupText 作为备用。
  * download 的索引 0、1、2 分别对应场景进入、资料下载后打开提示、下载后约五秒的可选结束提示。
  * mail 的索引 0 对应邮件详情的入场讲解；可替换为自有音频。
- * ransomware 的索引 0、1 分别对应路径动画讲解与“开始”按钮出现时的提示。
+ * ransomware 的索引 0、1、2 分别对应路径动画讲解、开始按钮出现时的提示与桌面演示引导。
  */
 const trainingAsset = (fileName: string) => `${import.meta.env.BASE_URL}training-assets/${fileName}`;
 
@@ -42,10 +42,12 @@ export const NARRATION_CONFIG = {
     audioSrc: [
       trainingAsset("ransomware-narration-animation-entry.wav"),
       trainingAsset("ransomware-narration-start-prompt.wav"),
+      trainingAsset("ransomware-narration-desktop-return.wav"),
     ],
     backupText: [
       "勒索软件常借助伪造业务邮件、相似文件名称或来源不明的资料进入用户电脑。攻击者会利用看似正常的工作往来诱导打开内容，进而造成业务数据无法正常使用、工作中断和恢复成本上升。请注意核对来源、文件信息和业务确认路径。",
-      "下面进入勒索病毒演示环节，请点击按钮。",
+      "下面进入勒索病毒演示环节，请点击开始演示按钮。",
+      "请最小化浏览器，回到桌面进行演示环节。",
     ],
   },
 } as const;
