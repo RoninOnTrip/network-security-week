@@ -467,53 +467,55 @@ function HomeScreen({ openScene, welcomeAudioPending, playHomeWelcome }: { openS
 /** 设计提醒：主页采用画廊式安全体验入口，留白、图形场景与单一行动按钮优先于状态信息。 */
 /** 设计提醒：首页以简洁的指挥蓝入口画布承载三个独立场景；不增加状态、时长或长说明，强调明确的下一步动作。 */
 function CommandEntryGrid({ openScene, welcomeAudioPending, playHomeWelcome }: { openScene: (key: SceneKey) => void; welcomeAudioPending: boolean; playHomeWelcome: () => void }) {
-  const theme: Record<SceneKey, { tag: string; action: string; accent: string; edge: string; actionTone: string }> = {
-    download: { tag: "SOURCE CHECK", action: "开始下载", accent: "#69e0c4", edge: "border-[#72e0c8]/45", actionTone: "bg-[#187b6e] hover:bg-[#239f8c]" },
-    mail: { tag: "MESSAGE TRACE", action: "追踪邮件", accent: "#f2c967", edge: "border-[#f2c967]/45", actionTone: "bg-[#a56f24] hover:bg-[#c98a2c]" },
-    ransomware: { tag: "RECOVERY PATH", action: "查看资料", accent: "#e37d71", edge: "border-[#e37d71]/45", actionTone: "bg-[#a94b43] hover:bg-[#ca6158]" },
+  const theme: Record<SceneKey, { action: string }> = {
+    download: { action: "开始下载" },
+    mail: { action: "追踪邮件" },
+    ransomware: { action: "开始演示" },
   };
 
   return (
     <div className="relative z-10 min-h-screen">
-      <div className="home-command-shell min-h-screen overflow-hidden">
-        <header className="relative z-10 flex items-center justify-between border-b border-white/10 px-5 py-4 sm:px-8 sm:py-5 lg:px-12">
-          <BrandMark inverse />
-          <div className="flex items-center gap-3 font-mono text-[9px] tracking-[.18em] text-[#b5d1d5]"><span className="hidden sm:inline">NETWORK SECURITY WEEK</span><span className="h-1.5 w-1.5 rounded-full bg-[#69e0c4] shadow-[0_0_12px_#69e0c4]" /><span>READY</span></div>
+      <div className="cinematic-landing-shell min-h-screen overflow-hidden">
+        <header className="cinematic-header relative z-10 flex items-center justify-between px-5 py-4 sm:px-8 lg:px-12">
+          <BrandMark compact inverse />
+          {welcomeAudioPending && <button type="button" onClick={playHomeWelcome} className="cinematic-audio-button" aria-label="开启欢迎语音" title="开启欢迎语音"><Headphones className="h-5 w-5" /></button>}
         </header>
 
-        <main className="relative z-10 px-5 pb-7 pt-8 sm:px-8 sm:pb-10 sm:pt-12 lg:px-12 lg:pb-12 lg:pt-16">
-          <div className="home-command-grid absolute inset-0" aria-hidden="true" />
-          <div className="home-command-orbit home-command-orbit-a" aria-hidden="true" />
-          <div className="home-command-orbit home-command-orbit-b" aria-hidden="true" />
-          <div className="home-command-scan" aria-hidden="true" />
-          <span className="pointer-events-none absolute right-4 top-3 font-mono text-[clamp(8rem,22vw,19rem)] font-semibold leading-none tracking-[-.1em] text-white/[.035] sm:right-8">03</span>
+        <main className="cinematic-main relative z-10 px-5 pb-8 pt-4 sm:px-8 sm:pb-10 lg:px-12 lg:pt-7">
+          <div className="cinematic-grid pointer-events-none absolute inset-0" aria-hidden="true" />
+          <div className="cinematic-aurora cinematic-aurora-a pointer-events-none" aria-hidden="true" />
+          <div className="cinematic-aurora cinematic-aurora-b pointer-events-none" aria-hidden="true" />
+          <div className="cinematic-orb cinematic-orb-a pointer-events-none" aria-hidden="true" />
+          <div className="cinematic-orb cinematic-orb-b pointer-events-none" aria-hidden="true" />
+          <div className="cinematic-ripple cinematic-ripple-a pointer-events-none" aria-hidden="true" />
+          <div className="cinematic-ripple cinematic-ripple-b pointer-events-none" aria-hidden="true" />
+          <div className="cinematic-spark-field pointer-events-none" aria-hidden="true"><span /><span /><span /><span /><span /></div>
 
-          <section className="relative z-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_260px] lg:items-end">
-            <div className="max-w-3xl">
-              <div className="inline-flex items-center gap-2 border border-[#7ce0ca]/35 bg-[#0c3950]/80 px-3 py-1.5 font-mono text-[9px] tracking-[.18em] text-[#8edcca]"><span className="h-1.5 w-1.5 rounded-full bg-[#76dfc4] shadow-[0_0_12px_#76dfc4]" />SAFETY EXPERIENCE CENTER</div>
-              <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3"><h1 className="font-serif text-[clamp(2.8rem,6vw,5.7rem)] font-black leading-[.98] tracking-[-.06em] text-white">选择一个<br className="hidden sm:block" />体验场景</h1>{welcomeAudioPending && <button type="button" onClick={playHomeWelcome} className="inline-flex items-center gap-2 border border-[#86ddca]/45 bg-[#174c5a]/85 px-3 py-2 font-mono text-[10px] font-semibold tracking-[.08em] text-[#dffcf4] shadow-[0_10px_28px_rgba(0,0,0,.18)] transition hover:-translate-y-0.5 hover:bg-[#216777] active:scale-[.97]" aria-label="开启欢迎语音"><Headphones className="h-3.5 w-3.5" />开启欢迎语音</button>}</div>
-            </div>
-            <div className="hidden border-l border-white/15 pl-5 lg:block"><p className="font-mono text-[9px] tracking-[.18em] text-[#8dbbc4]">MISSION CHANNEL</p><div className="mt-4 flex items-end gap-2"><span className="font-serif text-5xl font-bold text-[#dffcf4]">03</span><span className="mb-1 font-mono text-[9px] tracking-[.13em] text-[#8edcca]">SCENES</span></div><div className="mt-4 h-px w-full bg-gradient-to-r from-[#76dfc4] via-[#f2c967] to-transparent" /></div>
+          <section className="cinematic-hero relative z-10">
+            <h1>网络安全<br /><span>体验区</span></h1>
+            <p>探索、识别与守护，从一个场景开始。</p>
           </section>
 
-          <section className="relative z-10 mt-9 grid gap-4 lg:mt-12 lg:grid-cols-3">
+          <section className="cinematic-scene-grid relative z-10" aria-label="安全演练场景入口">
             {sceneCards.map((scene) => {
               const style = theme[scene.key];
-              return <article key={scene.key} className={`scene-card group relative overflow-hidden border ${style.edge} bg-[#0b3248]/92 p-3 shadow-[0_18px_40px_rgba(0,0,0,.20)] transition duration-300 hover:-translate-y-2 hover:bg-[#0d3a51] hover:shadow-[0_28px_55px_rgba(0,0,0,.34)] sm:p-4`}>
-                <span className="pointer-events-none absolute -right-4 -top-10 font-mono text-[8rem] font-semibold leading-none text-white/[.035]">{scene.index}</span>
-                <div className="relative flex items-center justify-between"><span className="font-mono text-[10px] font-semibold tracking-[.16em] text-[#c6e1e2]">{scene.index} · {style.tag}</span><span className="h-2 w-2 rounded-full" style={{ backgroundColor: style.accent, boxShadow: `0 0 14px ${style.accent}` }} /></div>
-                <div className="relative mt-3 overflow-hidden border border-white/10 bg-white/[.035] p-2"><ScenarioHeroVisual scene={scene} /></div>
-                <div className="relative mt-5"><h2 className="font-serif text-[29px] font-bold tracking-tight text-white">{scene.title}</h2></div>
-                <button onClick={() => openScene(scene.key)} className={`relative mt-5 inline-flex w-full items-center justify-between border border-white/15 ${style.actionTone} px-4 py-3.5 text-sm font-bold text-white shadow-[0_10px_22px_rgba(0,0,0,.18)] transition active:scale-[.97]`}>{style.action}<ArrowRight className="h-4 w-4" /></button>
+              return <article key={scene.key} className={`cinematic-scene-card cinematic-scene-${scene.key} group`}>
+                <span className="cinematic-scene-index" aria-hidden="true">{scene.index}</span>
+                <CinematicSceneVisual scene={scene} />
+                <h2>{scene.title}</h2>
+                <button type="button" onClick={() => openScene(scene.key)} className="cinematic-scene-action" aria-label={`进入${scene.title}场景`}><span>{style.action}</span><ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1.5" /></button>
               </article>;
             })}
           </section>
         </main>
-
-        <footer className="relative z-10 flex justify-between border-t border-white/10 px-5 py-4 font-mono text-[9px] tracking-[.16em] text-[#91b3bb] sm:px-8 lg:px-12"><span>NETWORK SECURITY WEEK</span><span>COMMAND CANVAS / 2026</span></footer>
       </div>
     </div>
   );
+}
+
+function CinematicSceneVisual({ scene }: { scene: (typeof sceneCards)[number] }) {
+  const Icon = scene.icon;
+  return <div className="cinematic-scene-visual"><div className="cinematic-visual-grid" /><div className="cinematic-visual-orbit cinematic-visual-orbit-a" /><div className="cinematic-visual-orbit cinematic-visual-orbit-b" /><div className="cinematic-visual-line" /><div className="cinematic-visual-core"><Icon className="h-10 w-10" /></div><span className="cinematic-visual-particle cinematic-visual-particle-a" /><span className="cinematic-visual-particle cinematic-visual-particle-b" /><span className="cinematic-visual-particle cinematic-visual-particle-c" /></div>;
 }
 
 function HomeEntryGrid({ openScene, welcomeAudioPending, playHomeWelcome }: { openScene: (key: SceneKey) => void; welcomeAudioPending: boolean; playHomeWelcome: () => void }) {
