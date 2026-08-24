@@ -88,6 +88,8 @@ const stepNames: Record<SceneKey, string[]> = {
   ransomware: ["业务资料", "异常出现", "隔离响应", "复盘"],
 };
 
+const trainingAssetUrl = (fileName: string) => `${import.meta.env.BASE_URL}training-assets/${fileName}`;
+
 function downloadSafeTrainingFile(filename: string, content: string) {
   const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -100,23 +102,18 @@ function downloadSafeTrainingFile(filename: string, content: string) {
   URL.revokeObjectURL(url);
 }
 
-/** 仅下载配置中明确映射的非可执行教学资料，不读取本机目录。 */
+/** 仅下载项目内明确映射的同源教学资料，不读取本机目录。 */
 function downloadMappedTrainingAsset(assetUrl: string, downloadName: string) {
   const allowedFile = isAllowedTrainingFile(downloadName);
-  if (!assetUrl.startsWith("/manus-storage/") || !allowedFile) return;
-  void fetch(assetUrl)
-    .then((response) => (response.ok ? response.blob() : Promise.reject(new Error("附件无法获取"))))
-    .then((blob) => {
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = downloadName;
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      URL.revokeObjectURL(url);
-    })
-    .catch(() => undefined);
+  const staticBase = import.meta.env.BASE_URL;
+  if (!assetUrl.startsWith(staticBase) || !allowedFile) return false;
+  const anchor = document.createElement("a");
+  anchor.href = assetUrl;
+  anchor.download = downloadName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  return true;
 }
 
 export default function Home() {
@@ -373,7 +370,7 @@ function BrandMark({ compact = false, inverse = false }: { compact?: boolean; in
   return (
     <div className="flex items-center gap-3">
       <div className="relative grid h-12 w-12 place-items-center overflow-hidden rounded-[15px] bg-[#123f5b] shadow-[0_10px_24px_rgba(18,63,91,0.2)]">
-        <img src="/manus-storage/safety-week-mark_80032d93.png" alt="安全周推演台标志" className="h-10 w-10 object-contain" />
+        <img src={trainingAssetUrl("safety-week-mark.png")} alt="安全周推演台标志" className="h-10 w-10 object-contain" />
       </div>
       {!compact && (
         <div className="leading-none">
@@ -728,15 +725,15 @@ function TrainingSoftwarePortal({ onLeave, onStageAudio, onAudioAfterCurrent }: 
   const [selectedApp, setSelectedApp] = useState("腾讯视频");
   const hasPlayedEntryNarration = useRef(false);
   const appIcons: Record<string, string> = {
-    WorkBuddy: "/manus-storage/workbuddy_44df2417.png",
-    "DClaw龙虾安全本地版": "/manus-storage/dclaw_ba52c34d.png",
-    元宝: "/manus-storage/yuanbao_747b0abc.png",
-    腾讯视频: "/manus-storage/tencent-video_fd612cbd.png",
-    "WPS Office": "/manus-storage/wps-office_d345b3f3.png",
-    腾讯会议: "/manus-storage/tencent-meeting_b28b0a3b.png",
-    QQ: "/manus-storage/qq_f2ba01d0.png",
-    "QQ音乐": "/manus-storage/qq-music_728c4f3c.png",
-    "腾讯电脑管家": "/manus-storage/index-banner-logo_e5c82f0b.svg",
+    WorkBuddy: trainingAssetUrl("workbuddy.png"),
+    "DClaw龙虾安全本地版": trainingAssetUrl("dclaw.png"),
+    元宝: trainingAssetUrl("yuanbao.png"),
+    腾讯视频: trainingAssetUrl("tencent-video.png"),
+    "WPS Office": trainingAssetUrl("wps-office.png"),
+    腾讯会议: trainingAssetUrl("tencent-meeting.png"),
+    QQ: trainingAssetUrl("qq.png"),
+    "QQ音乐": trainingAssetUrl("qq-music.png"),
+    "腾讯电脑管家": trainingAssetUrl("authorized-pc/index-banner-logo.svg"),
   };
   const installerInfo: Record<string, { file: string; version: string; size: string }> = {
     WorkBuddy: { file: "WorkBuddy_Setup_5.3.0.exe", version: "5.3.0", size: "388.37 MB" },
@@ -789,7 +786,7 @@ function TrainingSoftwarePortal({ onLeave, onStageAudio, onAudioAfterCurrent }: 
     <div className="fixed inset-0 z-[100] overflow-y-auto bg-[#edf1f7] font-sans text-[#222]">
       <header className="h-20 bg-white/95 shadow-[0_1px_0_rgba(0,0,0,.04)]">
         <div className="mx-auto flex h-full w-full max-w-[1200px] items-center gap-5 px-4 xl:px-0">
-          <img src="/manus-storage/header-logo_feccb5bc.png" alt="腾讯软件中心" className="h-8 w-36 shrink-0 object-contain" />
+          <img src={trainingAssetUrl("authorized-pc/header-logo.png")} alt="腾讯软件中心" className="h-8 w-36 shrink-0 object-contain" />
           <nav className="hidden h-full items-stretch lg:flex"><button className="relative w-24 text-base font-semibold text-[#2049ee] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[3px] after:bg-[#31abff]">首页</button><button className="w-24 text-base text-[#38435a] hover:bg-[#f7f9fa]">分类</button><button className="w-24 text-base text-[#38435a] hover:bg-[#f7f9fa]">游戏</button><button className="w-24 text-base text-[#38435a] hover:bg-[#f7f9fa]">开放平台</button></nav>
           <div className="ml-auto hidden w-[330px] lg:block"><div className="flex h-10 items-center rounded-sm border-2 border-[#33acff] bg-white px-3"><Search className="h-4 w-4 text-[#7f91a4]" /><span className="ml-2 flex-1 text-xs text-[#a4b0bd]">在这里输入你要找的软件</span><span className="grid h-7 w-8 place-items-center bg-[#33acff] text-white"><Search className="h-4 w-4" /></span></div><p className="mt-1 truncate text-[9px] text-[#8ca0b0]">https://pc.qqqq.example-training.local/ · 203.0.113.42</p></div>
           <button onClick={() => beginDownload("腾讯电脑管家")} className="shrink-0 bg-[#2049ee] px-4 py-2.5 text-sm font-bold text-white shadow-[0_5px_12px_rgba(32,73,238,.22)] transition hover:bg-[#153bca] active:scale-[.98]">下载电脑管家</button>
@@ -799,9 +796,9 @@ function TrainingSoftwarePortal({ onLeave, onStageAudio, onAudioAfterCurrent }: 
       <main className="mx-auto w-full max-w-[1200px] px-4 pb-12 pt-5 xl:px-0">
         <section className="relative min-h-[282px] overflow-hidden bg-[linear-gradient(90deg,#e0fbff_0%,#c9f6f8_55%,#dcfcff_100%)] px-9 py-7 sm:px-14">
           <div className="absolute bottom-[-80px] right-[2%] h-64 w-64 rounded-full border-[32px] border-[#69dce0]/20" />
-          <div className="relative z-10 max-w-[510px] pt-4"><img src="/manus-storage/index-banner-logo_e5c82f0b.svg" alt="腾讯电脑管家" className="h-12 w-auto" /><h1 className="mt-5 text-[38px] font-semibold leading-tight tracking-[-.045em] text-[#2049ee] sm:text-[44px]">海量软件下载 管理无忧</h1><p className="mt-3 text-lg tracking-tight text-[#345ec0]">一键下载安装|安全无捆绑|更新无插件|卸载无残留</p><button onClick={() => beginDownload("腾讯电脑管家")} className="mt-7 bg-[#2049ee] px-7 py-3 text-lg font-medium text-white shadow-[0_7px_16px_rgba(32,73,238,.25)] transition hover:bg-[#123ad2] active:scale-[.98]">下载电脑管家</button></div>
-          <img src="/manus-storage/index-banner-fimg_1b12f41e.png" alt="软件管理面板" className="absolute bottom-0 right-[-12px] hidden h-[282px] w-auto object-contain object-bottom sm:block" />
-          <img src="/manus-storage/index-banner-other_4bee470b.svg" alt="" className="absolute bottom-4 right-[24%] hidden h-20 w-20 opacity-90 lg:block" />
+          <div className="relative z-10 max-w-[510px] pt-4"><img src={trainingAssetUrl("authorized-pc/index-banner-logo.svg")} alt="腾讯电脑管家" className="h-12 w-auto" /><h1 className="mt-5 text-[38px] font-semibold leading-tight tracking-[-.045em] text-[#2049ee] sm:text-[44px]">海量软件下载 管理无忧</h1><p className="mt-3 text-lg tracking-tight text-[#345ec0]">一键下载安装|安全无捆绑|更新无插件|卸载无残留</p><button onClick={() => beginDownload("腾讯电脑管家")} className="mt-7 bg-[#2049ee] px-7 py-3 text-lg font-medium text-white shadow-[0_7px_16px_rgba(32,73,238,.25)] transition hover:bg-[#123ad2] active:scale-[.98]">下载电脑管家</button></div>
+          <img src={trainingAssetUrl("authorized-pc/index-banner-fimg.png")} alt="软件管理面板" className="absolute bottom-0 right-[-12px] hidden h-[282px] w-auto object-contain object-bottom sm:block" />
+          <img src={trainingAssetUrl("authorized-pc/index-banner-other.svg")} alt="" className="absolute bottom-4 right-[24%] hidden h-20 w-20 opacity-90 lg:block" />
         </section>
 
         <section className="mt-5 bg-white p-7 sm:p-[30px]"><div className="flex items-center justify-between"><h2 className="text-xl font-semibold text-black">精选软件</h2><button className="text-sm font-medium text-[#1232da]">换一换</button></div><div className="mt-1 grid gap-3 md:grid-cols-2 xl:grid-cols-4">{featured.map(([name, desc]) => <article key={name} className="group relative mt-4 flex h-[90px] items-center border border-black/[.06] bg-white px-5 transition hover:shadow-[0_10px_20px_rgba(0,0,0,.07)]"><img src={appIcons[name]} alt="" className="h-[60px] w-[60px] shrink-0 object-contain" /><div className="ml-3 min-w-0"><div className="flex items-center gap-1"><h3 className="truncate text-[15px] text-[#181818]">{name}</h3><span className="rounded-sm bg-[#00b35d]/10 px-1 text-[10px] text-[#00ab59]">推荐</span></div><p className="mt-1 truncate text-xs text-[#999]">{desc}</p></div><button onClick={() => beginDownload(name)} className="absolute right-3 top-[31px] hidden h-[24px] w-[54px] bg-[#2049ee] text-xs text-white group-hover:block">下载</button></article>)}</div></section>

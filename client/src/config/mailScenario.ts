@@ -4,8 +4,8 @@ import { SHARED_DOWNLOAD_TRAINING_ASSET } from "@/config/sharedDownloadAsset";
  * 钓鱼邮件教学内容配置
  *
  * 修改邮件标题、发件人、正文、收件时间和附件显示信息时，只需编辑此文件。
- * 附件必须使用已上传至静态资源存储的明确教学资料；仅支持 txt、pdf、png、jpg、jpeg、webp 等不可执行文件。
- * 请将新资料上传后返回的 /manus-storage/... 地址填入 attachment.assetUrl，切勿填写本机路径或可执行文件地址。
+ * 附件必须使用 client/public/training-assets/ 内明确命名的教学资料，并通过共享下载配置映射；仅支持白名单中的教学文件类型。
+ * 静态资源路径必须基于 import.meta.env.BASE_URL 生成，以兼容 GitHub Pages 子路径发布；切勿填写本机路径。
  */
 export const MAIL_SCENARIO_CONFIG = {
   productName: "企业邮箱系统",

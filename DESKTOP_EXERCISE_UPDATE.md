@@ -6,7 +6,7 @@
 
 该引导层会播放以下中文提示音：
 
-> 请最小化浏览器，回到桌面进行演示环节。
+> 回到桌面，并打开任意文档。
 
 页面同时呈现桌面切换风格的入场、扫描与进度动画，并显示文字操作说明。参与者完成真实桌面上的人工演示后，可返回页面点击“我已完成桌面演示”，回到体验中心。
 
@@ -17,7 +17,7 @@
 | `client/src/components/RansomwareDesktopScenario.tsx` | 移除 `lesuo.exe` 链接触发逻辑；新增桌面演示提示状态、开始按钮和完成按钮。 |
 | `client/src/config/narration.ts` | 添加勒索场景第 3 段讲解配置及文字备用方案。 |
 | `client/src/index.css` | 新增提示层入场、光晕、扫描线、进度动画和减少动态效果偏好支持。 |
-| `client/public/training-assets/ransomware-narration-desktop-return.wav` | 新增 5.24 秒中文引导音频。 |
+| `client/public/training-assets/ransomware-narration-desktop-return.wav` | 新增与当前引导文案同步的中文提示音。 |
 
 ## 验证结果
 
