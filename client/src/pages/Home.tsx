@@ -493,7 +493,6 @@ function CommandEntryGrid({ openScene, welcomeAudioPending, playHomeWelcome }: {
 
           <section className="cinematic-hero relative z-10">
             <h1>网络安全<br /><span>体验区</span></h1>
-            <p>探索、识别与守护，从一个场景开始。</p>
           </section>
 
           <section className="cinematic-scene-grid relative z-10" aria-label="安全演练场景入口">
