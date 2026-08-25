@@ -233,7 +233,7 @@ export default function Home() {
     });
   };
 
-  const playSceneAudioAfterCurrent = (key: SceneKey, audioStep: number, delayMs = 3000) => {
+  const playSceneAudioAfterCurrent = (key: SceneKey, audioStep: number, delayMs = 420) => {
     const audio = audioRef.current;
     const scheduleNext = () => {
       clearNarrationFollowUp();
