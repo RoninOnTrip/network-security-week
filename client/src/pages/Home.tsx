@@ -90,6 +90,11 @@ const stepNames: Record<SceneKey, string[]> = {
 
 const trainingAssetUrl = (fileName: string) => `${import.meta.env.BASE_URL}training-assets/${fileName}`;
 
+/** 将长讲解拆为短句片段，播放器一次仅呈现当前讲解片段，避免遮挡训练内容。 */
+function splitNarrationSegments(text: string) {
+  return text.match(/[^，、。！？；]+[，、。！？；]?/g)?.map((segment) => segment.trim()).filter(Boolean) ?? [];
+}
+
 function downloadSafeTrainingFile(filename: string, content: string) {
   const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -124,16 +129,18 @@ export default function Home() {
   const [sceneResetKey, setSceneResetKey] = useState(0);
   const [activeSubtitle, setActiveSubtitle] = useState<string | null>(null);
   const [isNarrationPaused, setNarrationPaused] = useState(false);
-  const [isGuidanceCollapsed, setGuidanceCollapsed] = useState(false);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const homeWelcomeTimerRef = useRef<number | null>(null);
   const homeWelcomeHasStartedRef = useRef(false);
   const narrationFollowUpTimerRef = useRef<number | null>(null);
+  const [subtitleSegmentIndex, setSubtitleSegmentIndex] = useState(0);
 
   const activeScene = view === "home" ? null : sceneCards.find((scene) => scene.key === view) ?? sceneCards[0];
   const narration = activeScene ? NARRATION_CONFIG[activeScene.key].backupText[step] ?? "" : "";
   const steps = activeScene ? stepNames[activeScene.key] : [];
+  const subtitleSegments = useMemo(() => splitNarrationSegments(activeSubtitle ?? ""), [activeSubtitle]);
+  const currentSubtitleSegment = subtitleSegments[Math.min(subtitleSegmentIndex, Math.max(0, subtitleSegments.length - 1))] ?? null;
 
   const clearNarrationFollowUp = () => {
     if (narrationFollowUpTimerRef.current !== null) {
@@ -199,7 +206,6 @@ export default function Home() {
       return;
     }
     setNarrationPaused(false);
-    setActiveSubtitle(subtitle);
     audio.src = source;
     audio.onended = () => {
       audio.onended = null;
@@ -217,6 +223,7 @@ export default function Home() {
     };
     audio.play().then(() => {
       setNarrationPaused(false);
+      setActiveSubtitle(subtitle);
     }).catch(() => {
       audio.onended = null;
       audio.onerror = null;
@@ -259,7 +266,6 @@ export default function Home() {
       speak(NARRATION_CONFIG.home.backupText);
       return;
     }
-    setActiveSubtitle(NARRATION_CONFIG.home.backupText);
     audio.src = source;
     setNarrationPaused(false);
     audio.onended = () => {
@@ -276,6 +282,7 @@ export default function Home() {
     void audio.play().then(() => {
       homeWelcomeHasStartedRef.current = true;
       setNarrationPaused(false);
+      setActiveSubtitle(NARRATION_CONFIG.home.backupText);
     }).catch(() => {
       // 浏览器若拦截媒体自动播放，则自动改用内置语音；左下角播放器仍是唯一控制入口。
       audio.onended = null;
@@ -301,6 +308,24 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    setSubtitleSegmentIndex(0);
+    if (!activeSubtitle || subtitleSegments.length < 2 || isNarrationPaused) return;
+    const startedAt = Date.now();
+    const updateSubtitleSegment = () => {
+      if (isNarrationPaused) return;
+      const audio = audioRef.current;
+      const duration = audio?.duration ?? 0;
+      const progress = audio && !audio.paused && Number.isFinite(duration) && duration > 0
+        ? audio.currentTime / duration
+        : (Date.now() - startedAt) / (subtitleSegments.length * 3600);
+      setSubtitleSegmentIndex(Math.min(subtitleSegments.length - 1, Math.floor(Math.max(0, progress) * subtitleSegments.length)));
+    };
+    updateSubtitleSegment();
+    const interval = window.setInterval(updateSubtitleSegment, 320);
+    return () => window.clearInterval(interval);
+  }, [activeSubtitle, isNarrationPaused, subtitleSegments.length]);
+
+  useEffect(() => {
     if (!voiceEnabled) {
       stopNarration();
     }
@@ -308,11 +333,8 @@ export default function Home() {
 
   useEffect(() => {
     if (view !== "home" || !voiceEnabled) return;
-    // 公网浏览器通常禁止无用户手势的有声媒体自动播放：先展示完整欢迎字幕，
-    // 在首个非场景操作后自动启动对应音频；从场景返回和声音开关则在用户手势中直接播放。
-    if (!homeWelcomeHasStartedRef.current) {
-      setActiveSubtitle(NARRATION_CONFIG.home.backupText);
-    }
+    // 公网浏览器通常禁止无用户手势的有声媒体自动播放：首个非场景操作后自动启动欢迎音频；
+    // 空闲时播放器保持收起，避免字幕面板遮挡首页入口。
     const playAfterFirstEligibleInteraction = (event: Event) => {
       const target = event.target;
       if (target instanceof Element && target.closest("[data-scene-entry]")) return;
@@ -392,7 +414,7 @@ export default function Home() {
       <div className="app-grain pointer-events-none fixed inset-0 z-0" />
       {view === "home" && <div className="home-ambient" aria-hidden="true"><span className="home-grid" /><span className="home-orbit home-orbit-a" /><span className="home-orbit home-orbit-b" /><span className="home-orbit home-orbit-c" /><span className="home-stream home-stream-a" /><span className="home-stream home-stream-b" /><span className="home-stream home-stream-c" /><span className="home-scan home-scan-a" /><span className="home-scan home-scan-b" /><span className="home-node home-node-a" /><span className="home-node home-node-b" /><span className="home-node home-node-c" /></div>}
       <audio ref={audioRef} preload="auto" />
-      <GuidancePlayer title={activeScene ? `${activeScene.title} · 讲解` : "欢迎引导"} text={activeSubtitle} paused={isNarrationPaused} collapsed={isGuidanceCollapsed} voiceEnabled={voiceEnabled} onTogglePlayback={toggleNarrationPlayback} onToggleVoice={toggleVoice} onToggleCollapsed={() => setGuidanceCollapsed((value) => !value)} />
+      <GuidancePlayer title={activeScene ? `${activeScene.title} · 讲解` : "欢迎引导"} text={currentSubtitleSegment} paused={isNarrationPaused} voiceEnabled={voiceEnabled} onTogglePlayback={toggleNarrationPlayback} onToggleVoice={toggleVoice} />
       {view !== "home" && <div className="fixed bottom-5 right-5 z-[220] sm:bottom-7 sm:right-7"><button type="button" onClick={leaveScene} className="inline-flex min-h-14 items-center gap-3 rounded-2xl border-2 border-[#78a89f] bg-[#f8fffc] px-5 text-sm font-bold text-[#164a59] shadow-[0_16px_34px_rgba(18,63,91,.24)] backdrop-blur transition hover:-translate-y-1 hover:border-[#247f71] hover:bg-white hover:shadow-[0_22px_42px_rgba(18,63,91,.30)] active:scale-[.97]" aria-label="返回主页面" title="返回主页面"><House className="h-5 w-5" /><span>返回主页</span></button></div>}
       {view === "home" ? (
         <HomeScreen openScene={openScene} />
@@ -454,14 +476,14 @@ function VoiceToggle({ voiceEnabled, setVoiceEnabled }: { voiceEnabled: boolean;
   );
 }
 
-function GuidancePlayer({ title, text, paused, collapsed, voiceEnabled, onTogglePlayback, onToggleVoice, onToggleCollapsed }: { title: string; text: string | null; paused: boolean; collapsed: boolean; voiceEnabled: boolean; onTogglePlayback: () => void; onToggleVoice: () => void; onToggleCollapsed: () => void }) {
-  const statusText = !voiceEnabled ? "语音讲解已关闭" : text ?? "语音讲解已就绪";
+function GuidancePlayer({ title, text, paused, voiceEnabled, onTogglePlayback, onToggleVoice }: { title: string; text: string | null; paused: boolean; voiceEnabled: boolean; onTogglePlayback: () => void; onToggleVoice: () => void }) {
   const hasActiveNarration = voiceEnabled && Boolean(text);
-  const voiceButton = <button type="button" onClick={onToggleVoice} className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl transition duration-200 ${voiceEnabled ? "bg-[#e1f3f0] text-[#17796c] hover:-translate-y-0.5 hover:bg-[#d1ece5]" : "bg-[#f7ebe9] text-[#a25b52] hover:-translate-y-0.5 hover:bg-[#f2deda]"}`} aria-label={voiceEnabled ? "关闭语音讲解" : "开启语音讲解"}>{voiceEnabled ? <Volume2 className="h-4.5 w-4.5" /> : <VolumeX className="h-4.5 w-4.5" />}</button>;
-  if (collapsed) {
-    return <aside className="fixed bottom-5 left-5 z-[219] flex h-12 items-center gap-1.5 rounded-2xl border border-[#c7dce3]/90 bg-white/95 p-1 shadow-[0_14px_30px_rgba(18,63,91,.16)] backdrop-blur-xl transition-all duration-300 sm:bottom-7 sm:left-7" aria-label="已收起的语音讲解控制">{voiceButton}<button type="button" onClick={onToggleCollapsed} className="grid h-10 w-10 place-items-center rounded-xl text-[#5f7d86] transition hover:bg-[#edf6f5] hover:text-[#216e69]" aria-label="展开讲解" title="展开讲解"><ChevronDown className="h-4 w-4" /></button></aside>;
+  const isPlaying = hasActiveNarration && !paused;
+  const voiceButton = <button type="button" onClick={onToggleVoice} className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl transition duration-200 ${voiceEnabled ? "bg-[#e1f3f0] text-[#17796c] hover:-translate-y-0.5 hover:bg-[#d1ece5]" : "bg-[#f7ebe9] text-[#a25b52] hover:-translate-y-0.5 hover:bg-[#f2deda]"}`} aria-label={voiceEnabled ? "关闭语音讲解" : "开启语音讲解"} title={voiceEnabled ? "关闭语音讲解" : "开启语音讲解"}>{voiceEnabled ? <Volume2 className="h-4.5 w-4.5" /> : <VolumeX className="h-4.5 w-4.5" />}</button>;
+  if (!isPlaying) {
+    return <aside className="fixed bottom-5 left-5 z-[219] flex h-12 items-center gap-1 rounded-2xl border border-[#c7dce3]/90 bg-white/95 p-1 shadow-[0_14px_30px_rgba(18,63,91,.16)] backdrop-blur-xl transition-all duration-300 sm:bottom-7 sm:left-7" aria-label={paused && hasActiveNarration ? "已暂停的语音讲解控制" : "已收起的语音讲解控制"}>{voiceButton}{paused && hasActiveNarration && <button type="button" onClick={onTogglePlayback} className="rounded-xl px-2.5 py-2 font-sans text-xs font-semibold text-[#2c6470] transition hover:bg-[#edf8f5]" aria-label="继续讲解">继续</button>}</aside>;
   }
-  return <aside className="fixed bottom-5 left-5 z-[219] w-[min(30rem,calc(100vw-2.5rem))] overflow-hidden rounded-2xl border border-[#c7dce3]/90 bg-white/95 shadow-[0_18px_42px_rgba(18,63,91,.18)] backdrop-blur-xl transition-all duration-300 sm:bottom-7 sm:left-7 sm:w-[min(30rem,calc(100vw-7.5rem))]" aria-label="语音讲解控制"><div className="flex items-start gap-3 px-3 py-3 sm:px-4">{voiceButton}<div className="min-w-0 flex-1"><div className="flex min-h-10 items-center justify-between gap-2"><div className="min-w-0"><p className="truncate font-mono text-[9px] font-semibold tracking-[.12em] text-[#487783]">{title}</p><div className="mt-1 flex items-center gap-1.5 font-sans text-[11px] font-medium text-[#4f7580]"><span className={`guidance-pulse h-1.5 w-1.5 rounded-full ${hasActiveNarration && !paused ? "bg-[#2ca58d]" : "bg-[#a5b7bc]"}`} /><span>{hasActiveNarration ? (paused ? "讲解已暂停" : "正在讲解") : "讲解状态"}</span></div></div><div className="flex shrink-0 items-center gap-1">{hasActiveNarration && <button type="button" onClick={onTogglePlayback} className="rounded-lg border border-[#d8e6e4] px-2.5 py-1.5 font-sans text-xs font-semibold text-[#2c6470] transition hover:bg-[#edf8f5]" aria-label={paused ? "继续讲解" : "暂停讲解"}>{paused ? "继续" : "暂停"}</button>}<button type="button" onClick={onToggleCollapsed} className="grid h-8 w-8 place-items-center rounded-lg text-[#5f7d86] transition hover:bg-[#f2f7f7]" aria-label="收起讲解" title="收起讲解"><ChevronDown className="h-4 w-4 rotate-180" /></button></div></div><div key={statusText} className="guidance-transcript mt-2 max-h-28 overflow-y-auto pr-2 font-sans text-sm leading-6 text-[#244a5b]" aria-live="polite">{statusText}</div></div></div></aside>;
+  return <aside className="fixed bottom-5 left-5 z-[219] w-[min(27rem,calc(100vw-2.5rem))] overflow-hidden rounded-2xl border border-[#c7dce3]/90 bg-white/95 shadow-[0_18px_42px_rgba(18,63,91,.18)] backdrop-blur-xl transition-all duration-300 sm:bottom-7 sm:left-7 sm:w-[min(27rem,calc(100vw-7.5rem))]" aria-label="语音讲解控制"><div className="flex items-start gap-3 px-3 py-3 sm:px-4">{voiceButton}<div className="min-w-0 flex-1"><div className="flex min-h-10 items-center justify-between gap-2"><div className="min-w-0"><p className="truncate font-mono text-[9px] font-semibold tracking-[.12em] text-[#487783]">{title}</p><div className="mt-1 flex items-center gap-1.5 font-sans text-[11px] font-medium text-[#4f7580]"><span className="guidance-pulse h-1.5 w-1.5 rounded-full bg-[#2ca58d]" /><span>正在讲解</span></div></div><button type="button" onClick={onTogglePlayback} className="shrink-0 rounded-lg border border-[#d8e6e4] px-2.5 py-1.5 font-sans text-xs font-semibold text-[#2c6470] transition hover:bg-[#edf8f5]" aria-label={paused ? "继续讲解" : "暂停讲解"}>{paused ? "继续" : "暂停"}</button></div><div key={text} className="guidance-transcript mt-2 flex h-11 items-center overflow-hidden font-sans text-sm leading-5 text-[#244a5b]" aria-live="polite">{text}</div></div></div></aside>;
 }
 
 function LegacyHomeScreen({ openScene }: { openScene: (key: SceneKey) => void }) {
