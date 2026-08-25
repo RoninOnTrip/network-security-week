@@ -610,6 +610,16 @@
 .cinematic-scene-ransomware:hover .cinematic-lock-route i:nth-child(2) { transform: translateX(.6rem); transition-delay: 55ms; }
 .cinematic-scene-ransomware:hover .cinematic-lock-route i:nth-child(3) { transform: translateX(.85rem); transition-delay: 110ms; }
 
+@keyframes guidance-pulse { 0%, 100% { transform: scale(.82); box-shadow: 0 0 0 0 rgba(44, 165, 141, .30); } 50% { transform: scale(1.12); box-shadow: 0 0 0 5px rgba(44, 165, 141, 0); } }
+@keyframes guidance-transcript-in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+.guidance-pulse { animation: guidance-pulse 1.9s ease-in-out infinite; }
+.guidance-transcript { border-top: 1px solid rgba(199, 220, 227, .78); padding-top: .55rem; text-wrap: pretty; scrollbar-color: #9bbfc6 transparent; scrollbar-width: thin; }
+.guidance-transcript::-webkit-scrollbar { width: .35rem; }
+.guidance-transcript::-webkit-scrollbar-thumb { border-radius: 999px; background: #a9c7cc; }
+.guidance-transcript { animation: guidance-transcript-in 300ms cubic-bezier(.22, 1, .36, 1) both; }
+
 @media (prefers-reduced-motion: reduce) {
   .cinematic-source-tag, .cinematic-envelope-flap::before, .cinematic-lock-route i { transition: none !important; transform: none !important; }
+  .guidance-pulse, .guidance-transcript { animation: none !important; }
 }

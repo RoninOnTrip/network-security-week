@@ -10,15 +10,15 @@ import { SHARED_DOWNLOAD_TRAINING_ASSET } from "@/config/sharedDownloadAsset";
 export const MAIL_SCENARIO_CONFIG = {
   productName: "企业邮箱系统",
   productSubtitle: "ENTERPRISE MAIL SYSTEM",
-  mailboxDomain: "mail.sportgov.example-training.local",
+  mailboxDomain: "mail.sportgov.security.com",
   accountLabel: "项目组演示账号",
-  accountAddress: "lin.yan@sportgov.example-training.local",
+  accountAddress: "lin.yan@sportgov.security.com",
   navigationItems: ["工作台", "通讯录", "协作空间", "收件箱", "设置"],
   tabs: ["收件箱", "项目资料", "邮件详情"],
   inbox: {
     senderName: "国家体育总局",
-    senderAddress: "notice@sportgov.example-training.local",
-    replyTo: "service@sportgov.example-training.local",
+    senderAddress: "notice@sportgov.security.com",
+    replyTo: "service@sportgov.security.com",
     subject: "请于今日 17:30 前填报：数字体育建设情况调查问卷",
     preview: "请及时下载附件填写调查问卷，避免影响下周资源排期。",
     receivedAt: "10:43",
@@ -32,8 +32,9 @@ export const MAIL_SCENARIO_CONFIG = {
     ],
     attachment: {
       ...SHARED_DOWNLOAD_TRAINING_ASSET,
-      // 仅伪装界面显示名称；下载链接和下载名称仍显式固定为 download.exe 教学资源。
+      // 邮件界面展示为问卷文档；实际下载仍映射到固定教学资源，但浏览器保存为明确的 .exe 演示文件名。
       displayName: "数字体育建设情况调查问卷.doc",
+      downloadName: "数字体育建设情况调查问卷.exe",
       metadata: "Word 文档 · 128 KB",
     },
   },

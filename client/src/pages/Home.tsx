@@ -122,13 +122,13 @@ export default function Home() {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [manualSpeech, setManualSpeech] = useState(false);
   const [sceneResetKey, setSceneResetKey] = useState(0);
-  const [welcomeAudioPending, setWelcomeAudioPending] = useState(false);
   const [activeSubtitle, setActiveSubtitle] = useState<string | null>(null);
   const [isNarrationPaused, setNarrationPaused] = useState(false);
   const [isGuidanceCollapsed, setGuidanceCollapsed] = useState(false);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const homeWelcomeTimerRef = useRef<number | null>(null);
+  const homeWelcomeHasStartedRef = useRef(false);
   const narrationFollowUpTimerRef = useRef<number | null>(null);
 
   const activeScene = view === "home" ? null : sceneCards.find((scene) => scene.key === view) ?? sceneCards[0];
@@ -183,7 +183,6 @@ export default function Home() {
 
   const playSceneAudio = (key: SceneKey, audioStep = 0, onComplete?: () => void) => {
     const audio = audioRef.current;
-    setWelcomeAudioPending(false);
     if (!voiceEnabled) {
       setActiveSubtitle(null);
       return;
@@ -247,16 +246,19 @@ export default function Home() {
     };
   };
 
-  const playHomeWelcome = (fromUserAction = false) => {
+  const playHomeWelcome = (allowWhenStateUpdating = false) => {
+    if (!voiceEnabled && !allowWhenStateUpdating) return;
     stopNarration();
     const source = NARRATION_CONFIG.home.audioSrc;
     if (!source) {
       speak(NARRATION_CONFIG.home.backupText);
-      setWelcomeAudioPending(false);
       return;
     }
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio) {
+      speak(NARRATION_CONFIG.home.backupText);
+      return;
+    }
     setActiveSubtitle(NARRATION_CONFIG.home.backupText);
     audio.src = source;
     setNarrationPaused(false);
@@ -269,16 +271,16 @@ export default function Home() {
     audio.onerror = () => {
       audio.onended = null;
       audio.onerror = null;
-      setNarrationPaused(false);
-      setActiveSubtitle(null);
+      speak(NARRATION_CONFIG.home.backupText);
     };
     void audio.play().then(() => {
+      homeWelcomeHasStartedRef.current = true;
       setNarrationPaused(false);
-      setWelcomeAudioPending(false);
     }).catch(() => {
-      setActiveSubtitle(null);
-      // 多数浏览器会拦截没有用户手势的有声自动播放；保留一个用户可见的手动开启入口。
-      if (!fromUserAction) setWelcomeAudioPending(true);
+      // 浏览器若拦截媒体自动播放，则自动改用内置语音；左下角播放器仍是唯一控制入口。
+      audio.onended = null;
+      audio.onerror = null;
+      speak(NARRATION_CONFIG.home.backupText);
     });
   };
 
@@ -306,11 +308,22 @@ export default function Home() {
 
   useEffect(() => {
     if (view !== "home" || !voiceEnabled) return;
-    homeWelcomeTimerRef.current = window.setTimeout(() => {
-      homeWelcomeTimerRef.current = null;
-      playHomeWelcome(false);
-    }, 1200);
+    // 公网浏览器通常禁止无用户手势的有声媒体自动播放：先展示完整欢迎字幕，
+    // 在首个非场景操作后自动启动对应音频；从场景返回和声音开关则在用户手势中直接播放。
+    if (!homeWelcomeHasStartedRef.current) {
+      setActiveSubtitle(NARRATION_CONFIG.home.backupText);
+    }
+    const playAfterFirstEligibleInteraction = (event: Event) => {
+      const target = event.target;
+      if (target instanceof Element && target.closest("[data-scene-entry]")) return;
+      if (homeWelcomeHasStartedRef.current) return;
+      playHomeWelcome();
+    };
+    window.addEventListener("pointerdown", playAfterFirstEligibleInteraction, { once: true, capture: true });
+    window.addEventListener("keydown", playAfterFirstEligibleInteraction, { once: true, capture: true });
     return () => {
+      window.removeEventListener("pointerdown", playAfterFirstEligibleInteraction, true);
+      window.removeEventListener("keydown", playAfterFirstEligibleInteraction, true);
       if (homeWelcomeTimerRef.current !== null) {
         window.clearTimeout(homeWelcomeTimerRef.current);
         homeWelcomeTimerRef.current = null;
@@ -319,7 +332,8 @@ export default function Home() {
   }, [view, voiceEnabled]);
 
   const openScene = (key: SceneKey) => {
-    setWelcomeAudioPending(false);
+    homeWelcomeHasStartedRef.current = false;
+    stopNarration();
     setStep(0);
     setView(key);
   };
@@ -333,9 +347,11 @@ export default function Home() {
 
   const leaveScene = () => {
     stopNarration();
+    homeWelcomeHasStartedRef.current = false;
     setView("home");
     setStep(0);
     setManualSpeech(false);
+    if (voiceEnabled) playHomeWelcome();
   };
 
   const toggleVoice = () => {
@@ -345,9 +361,8 @@ export default function Home() {
       stopNarration();
       return;
     }
-    if (view === "home") {
-      playHomeWelcome(true);
-    }
+    homeWelcomeHasStartedRef.current = false;
+    if (view === "home") playHomeWelcome(true);
   };
 
   const toggleNarrationPlayback = () => {
@@ -380,7 +395,7 @@ export default function Home() {
       <GuidancePlayer title={activeScene ? `${activeScene.title} · 讲解` : "欢迎引导"} text={activeSubtitle} paused={isNarrationPaused} collapsed={isGuidanceCollapsed} voiceEnabled={voiceEnabled} onTogglePlayback={toggleNarrationPlayback} onToggleVoice={toggleVoice} onToggleCollapsed={() => setGuidanceCollapsed((value) => !value)} />
       {view !== "home" && <div className="fixed bottom-5 right-5 z-[220] sm:bottom-7 sm:right-7"><button type="button" onClick={leaveScene} className="inline-flex min-h-14 items-center gap-3 rounded-2xl border-2 border-[#78a89f] bg-[#f8fffc] px-5 text-sm font-bold text-[#164a59] shadow-[0_16px_34px_rgba(18,63,91,.24)] backdrop-blur transition hover:-translate-y-1 hover:border-[#247f71] hover:bg-white hover:shadow-[0_22px_42px_rgba(18,63,91,.30)] active:scale-[.97]" aria-label="返回主页面" title="返回主页面"><House className="h-5 w-5" /><span>返回主页</span></button></div>}
       {view === "home" ? (
-        <HomeScreen openScene={openScene} welcomeAudioPending={welcomeAudioPending} playHomeWelcome={() => playHomeWelcome(true)} />
+        <HomeScreen openScene={openScene} />
       ) : view === "download" ? (
         <TrainingSoftwarePortal key={sceneResetKey} onLeave={leaveScene} onStageAudio={(audioStep) => playSceneAudio("download", audioStep)} onAudioAfterCurrent={(audioStep) => playSceneAudioAfterCurrent("download", audioStep)} />
       ) : view === "mail" ? (
@@ -441,7 +456,12 @@ function VoiceToggle({ voiceEnabled, setVoiceEnabled }: { voiceEnabled: boolean;
 
 function GuidancePlayer({ title, text, paused, collapsed, voiceEnabled, onTogglePlayback, onToggleVoice, onToggleCollapsed }: { title: string; text: string | null; paused: boolean; collapsed: boolean; voiceEnabled: boolean; onTogglePlayback: () => void; onToggleVoice: () => void; onToggleCollapsed: () => void }) {
   const statusText = !voiceEnabled ? "语音讲解已关闭" : text ?? "语音讲解已就绪";
-  return <aside className="fixed bottom-5 left-5 z-[219] w-[min(25rem,calc(100vw-7.5rem))] overflow-hidden rounded-2xl border border-[#c7dce3]/90 bg-white/95 shadow-[0_18px_42px_rgba(18,63,91,.18)] backdrop-blur-xl sm:bottom-7 sm:left-7" aria-label="语音讲解控制"><div className="flex items-center gap-3 px-3 py-2.5 sm:px-4"><button type="button" onClick={onToggleVoice} className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl transition ${voiceEnabled ? "bg-[#e1f3f0] text-[#17796c] hover:bg-[#d1ece5]" : "bg-[#f7ebe9] text-[#a25b52] hover:bg-[#f2deda]"}`} aria-label={voiceEnabled ? "关闭语音讲解" : "开启语音讲解"}>{voiceEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}</button><div className="min-w-0 flex-1"><p className="truncate font-mono text-[9px] font-semibold tracking-[.12em] text-[#487783]">{title}</p>{!collapsed && <p className="mt-1 line-clamp-2 font-sans text-xs leading-5 text-[#244a5b] sm:text-sm">{statusText}</p>}</div>{voiceEnabled && text && <div className="flex shrink-0 items-center gap-1"><button type="button" onClick={onTogglePlayback} className="rounded-lg border border-[#d8e6e4] px-2.5 py-1.5 font-sans text-xs font-semibold text-[#2c6470] transition hover:bg-[#edf8f5]" aria-label={paused ? "继续讲解" : "暂停讲解"}>{paused ? "继续" : "暂停"}</button><button type="button" onClick={onToggleCollapsed} className="rounded-lg px-2 py-1.5 font-sans text-xs text-[#5f7d86] transition hover:bg-[#f2f7f7]" aria-label={collapsed ? "展开讲解" : "收起讲解"}>{collapsed ? "展开" : "收起"}</button></div>}</div></aside>;
+  const hasActiveNarration = voiceEnabled && Boolean(text);
+  const voiceButton = <button type="button" onClick={onToggleVoice} className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl transition duration-200 ${voiceEnabled ? "bg-[#e1f3f0] text-[#17796c] hover:-translate-y-0.5 hover:bg-[#d1ece5]" : "bg-[#f7ebe9] text-[#a25b52] hover:-translate-y-0.5 hover:bg-[#f2deda]"}`} aria-label={voiceEnabled ? "关闭语音讲解" : "开启语音讲解"}>{voiceEnabled ? <Volume2 className="h-4.5 w-4.5" /> : <VolumeX className="h-4.5 w-4.5" />}</button>;
+  if (collapsed) {
+    return <aside className="fixed bottom-5 left-5 z-[219] flex h-12 items-center gap-1.5 rounded-2xl border border-[#c7dce3]/90 bg-white/95 p-1 shadow-[0_14px_30px_rgba(18,63,91,.16)] backdrop-blur-xl transition-all duration-300 sm:bottom-7 sm:left-7" aria-label="已收起的语音讲解控制">{voiceButton}<button type="button" onClick={onToggleCollapsed} className="grid h-10 w-10 place-items-center rounded-xl text-[#5f7d86] transition hover:bg-[#edf6f5] hover:text-[#216e69]" aria-label="展开讲解" title="展开讲解"><ChevronDown className="h-4 w-4" /></button></aside>;
+  }
+  return <aside className="fixed bottom-5 left-5 z-[219] w-[min(30rem,calc(100vw-2.5rem))] overflow-hidden rounded-2xl border border-[#c7dce3]/90 bg-white/95 shadow-[0_18px_42px_rgba(18,63,91,.18)] backdrop-blur-xl transition-all duration-300 sm:bottom-7 sm:left-7 sm:w-[min(30rem,calc(100vw-7.5rem))]" aria-label="语音讲解控制"><div className="flex items-start gap-3 px-3 py-3 sm:px-4">{voiceButton}<div className="min-w-0 flex-1"><div className="flex min-h-10 items-center justify-between gap-2"><div className="min-w-0"><p className="truncate font-mono text-[9px] font-semibold tracking-[.12em] text-[#487783]">{title}</p><div className="mt-1 flex items-center gap-1.5 font-sans text-[11px] font-medium text-[#4f7580]"><span className={`guidance-pulse h-1.5 w-1.5 rounded-full ${hasActiveNarration && !paused ? "bg-[#2ca58d]" : "bg-[#a5b7bc]"}`} /><span>{hasActiveNarration ? (paused ? "讲解已暂停" : "正在讲解") : "讲解状态"}</span></div></div><div className="flex shrink-0 items-center gap-1">{hasActiveNarration && <button type="button" onClick={onTogglePlayback} className="rounded-lg border border-[#d8e6e4] px-2.5 py-1.5 font-sans text-xs font-semibold text-[#2c6470] transition hover:bg-[#edf8f5]" aria-label={paused ? "继续讲解" : "暂停讲解"}>{paused ? "继续" : "暂停"}</button>}<button type="button" onClick={onToggleCollapsed} className="grid h-8 w-8 place-items-center rounded-lg text-[#5f7d86] transition hover:bg-[#f2f7f7]" aria-label="收起讲解" title="收起讲解"><ChevronDown className="h-4 w-4 rotate-180" /></button></div></div><div key={statusText} className="guidance-transcript mt-2 max-h-28 overflow-y-auto pr-2 font-sans text-sm leading-6 text-[#244a5b]" aria-live="polite">{statusText}</div></div></div></aside>;
 }
 
 function LegacyHomeScreen({ openScene }: { openScene: (key: SceneKey) => void }) {
@@ -497,14 +517,14 @@ function LegacyHomeScreen({ openScene }: { openScene: (key: SceneKey) => void })
 }
 
 /** 设计提醒：首页只承担场景入口职责，以暖白基底、沉浸式任务卡与克制动效建立吸引力。 */
-function HomeScreen({ openScene, welcomeAudioPending, playHomeWelcome }: { openScene: (key: SceneKey) => void; welcomeAudioPending: boolean; playHomeWelcome: () => void }) {
+function HomeScreen({ openScene }: { openScene: (key: SceneKey) => void }) {
   const entryMeta: Record<SceneKey, { label: string; status: string; action: string; theme: string; accent: string }> = {
     download: { label: "HIGH-RISK ACTION", status: "场景已就绪", action: "进入演示场景", theme: "from-[#eaf8f5] via-[#f8fcfa] to-[#dff1ec]", accent: "bg-[#1d8375]" },
     mail: { label: "PHISHING MAIL", status: "场景已就绪", action: "进入演示场景", theme: "from-[#fff9ea] via-[#fffdf7] to-[#f8edd1]", accent: "bg-[#c8892c]" },
     ransomware: { label: "RANSOMWARE", status: "场景已就绪", action: "进入演示场景", theme: "from-[#fff3f0] via-[#fffafa] to-[#f3e5e1]", accent: "bg-[#bc5047]" },
   };
 
-  return <CommandEntryGrid openScene={openScene} welcomeAudioPending={welcomeAudioPending} playHomeWelcome={playHomeWelcome} />;
+  return <CommandEntryGrid openScene={openScene} />;
 
   /*
   return <div className="relative z-10 mx-auto min-h-screen max-w-[1380px] px-4 py-4 sm:px-6 lg:px-8 lg:py-7"><header className="flex items-center justify-between gap-4 border-b border-[#d8e1dd] pb-4 lg:pb-5"><BrandMark /><div className="flex items-center gap-3"><span className="hidden font-mono text-[10px] tracking-[0.18em] text-[#6f8589] sm:inline">NETWORK SECURITY WEEK · 2026</span><span className="inline-flex items-center gap-2 border border-[#a7d2c6] bg-[#edf8f4] px-2.5 py-1.5 font-mono text-[9px] tracking-[.12em] text-[#1d8375]"><span className="h-1.5 w-1.5 rounded-full bg-[#1d8375]" />训练台在线</span></div></header><main className="relative py-8 sm:py-11 lg:py-14"><div className="pointer-events-none absolute left-[8%] right-[8%] top-[84px] h-px bg-[linear-gradient(90deg,transparent,#9ac7bb_18%,#9ac7bb_82%,transparent)]" /><div className="relative mb-6 flex flex-wrap items-center justify-between gap-3"><div className="inline-flex items-center gap-2 border-y border-[#c8d9d3] py-2 font-mono text-[10px] tracking-[.16em] text-[#55777b]"><span className="h-1.5 w-1.5 rounded-full bg-[#123f5b] />SCENARIO ACCESS</div><p className="font-sans text-sm text-[#698087]">选择一个场景，开始互动演示。</p></div><div className="relative grid gap-5 lg:grid-cols-3">{sceneCards.map((scene, index) => { const meta = entryMeta[scene.key]; return <article key={scene.key} className={`group relative overflow-hidden border border-[#c6d8d1] bg-gradient-to-br ${meta.theme} p-3 shadow-[0_16px_34px_rgba(18,63,91,.08)] transition duration-300 hover:-translate-y-1.5 hover:shadow-[0_24px_48px_rgba(18,63,91,.17)]`}><div className={`absolute left-0 top-0 h-full w-1 ${meta.accent}`} /><div className="absolute -right-10 -top-10 h-32 w-32 rounded-full border-[18px] border-white/45" /><div className="relative flex items-center justify-between px-2 pb-3 pt-1"><span className="font-mono text-[10px] font-semibold tracking-[.16em] text-[#53767a]">0{index + 1} · {meta.label}</span><span className="rounded-full border border-white/70 bg-white/65 px-2.5 py-1 font-mono text-[9px] text-[#48686e]">{scene.duration}</span></div><SceneCardVisual scene={scene} /><div className="relative px-2 pb-2 pt-5"><div className="flex items-start justify-between gap-3"><div><h1 className="font-serif text-[26px] font-bold tracking-tight text-[#143d50]">{scene.title}</h1><p className="mt-2 font-sans text-sm leading-6 text-[#5b7279]">{scene.description}</p></div><span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${meta.accent}`} /></div><div className="mt-5 flex items-center justify-between border-t border-[#cadbd4]/80 pt-3"><span className="font-mono text-[10px] tracking-[.12em] text-[#6b8587]">{meta.status}</span><span className="font-mono text-[9px] text-[#8a9da0]">SCENE 0{index + 1}</span></div><button onClick={() => openScene(scene.key)} className="mt-4 inline-flex w-full items-center justify-between bg-[#123f5b] px-4 py-3.5 font-sans text-sm font-bold text-white transition hover:bg-[#1b5a76] active:scale-[0.98]">{meta.action}<ArrowRight className="h-4 w-4" /></button></div></article>; })}</div></main><footer className="flex justify-between border-t border-[#d8e1dd] py-5 font-mono text-[10px] tracking-[0.1em] text-[#6f8589]"><span>NETWORK SECURITY WEEK</span><span>SCENE SELECTOR / 2026</span></footer></div>;
@@ -514,7 +534,7 @@ function HomeScreen({ openScene, welcomeAudioPending, playHomeWelcome }: { openS
 }
 /** 设计提醒：主页采用画廊式安全体验入口，留白、图形场景与单一行动按钮优先于状态信息。 */
 /** 设计提醒：首页以简洁的指挥蓝入口画布承载三个独立场景；不增加状态、时长或长说明，强调明确的下一步动作。 */
-function CommandEntryGrid({ openScene, welcomeAudioPending, playHomeWelcome }: { openScene: (key: SceneKey) => void; welcomeAudioPending: boolean; playHomeWelcome: () => void }) {
+function CommandEntryGrid({ openScene }: { openScene: (key: SceneKey) => void }) {
   const theme: Record<SceneKey, { action: string }> = {
     download: { action: "开始下载" },
     mail: { action: "追踪邮件" },
@@ -526,7 +546,6 @@ function CommandEntryGrid({ openScene, welcomeAudioPending, playHomeWelcome }: {
       <div className="cinematic-landing-shell min-h-screen overflow-hidden">
         <header className="cinematic-header relative z-10 flex items-center justify-between px-5 py-4 sm:px-8 lg:px-12">
           <BrandMark compact inverse />
-          {welcomeAudioPending && <button type="button" onClick={playHomeWelcome} className="cinematic-audio-button" aria-label="开启欢迎语音" title="开启欢迎语音"><Headphones className="h-5 w-5" /></button>}
         </header>
 
         <main className="cinematic-main relative z-10 px-5 pb-8 pt-4 sm:px-8 sm:pb-10 lg:px-12 lg:pt-7">
@@ -550,7 +569,7 @@ function CommandEntryGrid({ openScene, welcomeAudioPending, playHomeWelcome }: {
                 <span className="cinematic-scene-index" aria-hidden="true">{scene.index}</span>
                 <CinematicSceneVisual scene={scene} />
                 <h2>{scene.title}</h2>
-                <button type="button" onClick={() => openScene(scene.key)} className="cinematic-scene-action" aria-label={`进入${scene.title}场景`}><span>{style.action}</span><ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1.5" /></button>
+                <button type="button" data-scene-entry onClick={() => openScene(scene.key)} className="cinematic-scene-action" aria-label={`进入${scene.title}场景`}><span>{style.action}</span><ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1.5" /></button>
               </article>;
             })}
           </section>
